@@ -36,7 +36,7 @@ model, scaler = None, None
 try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
-    st.success("✅ Model loaded successfully")
+    # Removed "✅ Model loaded successfully" message
 except FileNotFoundError:
     st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl` to your GitHub repo.")
 
