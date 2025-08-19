@@ -46,19 +46,50 @@ st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide"
 st.markdown(
     """
     <style>
-    /* Main Title */
-    h1 {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 3.2rem;
-        color: #6C3483;
-        text-align: center;
-        margin-bottom: 0.1em;
+    /* 🌙 Background Gradient */
+    .stApp {
+        background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%);
     }
 
-    /* Subtitle */
+    /* ✨ Title Animation */
+    h1 {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 3.4rem;
+        color: #6C3483;
+        text-align: center;
+        margin-bottom: 0.3em;
+        animation: fadeInDown 1s ease;
+    }
+    @keyframes fadeInDown {
+        from { opacity: 0; transform: translateY(-20px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+
     h2, h3 {
         font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         color: #4A235A;
+    }
+
+    /* 🔮 Prediction Result Glow */
+    .stSuccess {
+        font-size: 1.3rem;
+        font-weight: 700;
+        color: #fff !important;
+        background: linear-gradient(90deg, #6C3483, #884ea0);
+        border-radius: 15px;
+        padding: 15px 20px;
+        box-shadow: 0 0 18px rgba(108, 52, 131, 0.6);
+    }
+
+    /* 🎨 Input Styling */
+    .stNumberInput input, .stSelectbox, .stSlider {
+        border-radius: 10px;
+        border: 2px solid #d6bbe9;
+        padding: 6px;
+    }
+    .stNumberInput input:focus, .stSelectbox:focus {
+        border-color: #6C3483 !important;
+        box-shadow: 0 0 8px rgba(108, 52, 131, 0.5);
     }
 
     /* Form container */
@@ -68,12 +99,6 @@ st.markdown(
         border-radius: 15px;
         box-shadow: 0 6px 15px rgb(108 52 131 / 0.15);
         margin-bottom: 30px;
-    }
-
-    /* Input labels */
-    label {
-        font-weight: 600;
-        color: #4A235A;
     }
 
     /* Submit button */
@@ -91,50 +116,6 @@ st.markdown(
         color: #fff;
     }
 
-    /* Chat Section */
-    .chat-container {
-        background: #fff;
-        padding: 20px 25px;
-        border-radius: 15px;
-        box-shadow: 0 6px 15px rgb(108 52 131 / 0.15);
-        max-height: 450px;
-        overflow-y: auto;
-        margin-bottom: 10px;
-    }
-
-    /* Chat bubbles */
-    .chat-bubble-user {
-        background: #d6bbe9;
-        color: #3a0ca3;
-        padding: 12px 18px;
-        border-radius: 18px 18px 0 18px;
-        max-width: 80%;
-        margin-bottom: 10px;
-        font-weight: 600;
-        align-self: flex-end;
-        box-shadow: 0 2px 6px rgb(108 52 131 / 0.2);
-    }
-
-    .chat-bubble-bot {
-        background: #ece8f8;
-        color: #4a235a;
-        padding: 12px 18px;
-        border-radius: 18px 18px 18px 0;
-        max-width: 80%;
-        margin-bottom: 10px;
-        font-weight: 500;
-        align-self: flex-start;
-        box-shadow: 0 2px 6px rgb(108 52 131 / 0.1);
-    }
-
-    /* Chat role label */
-    .chat-role {
-        font-size: 0.85rem;
-        font-weight: 700;
-        margin-bottom: 3px;
-        color: #6C3483;
-    }
-
     /* Clear button styling */
     div.stButton > button:last-child {
         background-color: #bbb;
@@ -148,6 +129,73 @@ st.markdown(
     div.stButton > button:last-child:hover {
         background-color: #999;
         color: #fff;
+    }
+
+    /* 💬 Chat Container */
+    .chat-container {
+        background: #fff;
+        padding: 20px 25px;
+        border-radius: 20px;
+        box-shadow: 0 8px 20px rgb(108 52 131 / 0.15);
+        max-height: 500px;
+        overflow-y: auto;
+        margin-bottom: 15px;
+        scrollbar-width: thin;
+        scrollbar-color: #6C3483 #f9f6fb;
+    }
+
+    /* 🌐 Custom Scrollbar */
+    .chat-container::-webkit-scrollbar {
+        width: 8px;
+    }
+    .chat-container::-webkit-scrollbar-thumb {
+        background: #6C3483;
+        border-radius: 10px;
+    }
+    .chat-container::-webkit-scrollbar-track {
+        background: #f9f6fb;
+    }
+
+    /* 👤 User bubble with avatar */
+    .chat-bubble-user {
+        position: relative;
+        background: #d6bbe9;
+        color: #3a0ca3;
+        padding: 12px 18px;
+        border-radius: 18px 18px 0 18px;
+        max-width: 75%;
+        margin-bottom: 12px;
+        font-weight: 600;
+        align-self: flex-end;
+        box-shadow: 0 2px 6px rgb(108 52 131 / 0.2);
+    }
+    .chat-bubble-user::before {
+        content: "🧑";
+        position: absolute;
+        left: -30px;
+        top: 0;
+        font-size: 1.5rem;
+    }
+
+    /* 🤖 Bot bubble with avatar */
+    .chat-bubble-bot {
+        position: relative;
+        background: #ece8f8;
+        color: #4a235a;
+        padding: 12px 18px;
+        border-radius: 18px 18px 18px 0;
+        max-width: 75%;
+        margin-bottom: 12px;
+        font-weight: 500;
+        align-self: flex-start;
+        box-shadow: 0 2px 6px rgb(108 52 131 / 0.15);
+    }
+    .chat-bubble-bot::before {
+        content: "🤖";
+        position: absolute;
+        left: -30px;
+        top: 0;
+        font-size: 1.5rem;
     }
     </style>
     """,
@@ -286,12 +334,10 @@ st.markdown('<div class="chat-container" style="display:flex; flex-direction:col
 for role, msg in st.session_state.chat_history:
     if role == "You":
         st.markdown(f"""
-        <div class="chat-role">🧑 {role}:</div>
         <div class="chat-bubble-user">{msg}</div>
         """, unsafe_allow_html=True)
     else:
         st.markdown(f"""
-        <div class="chat-role">🤖 {role}:</div>
         <div class="chat-bubble-bot">{msg}</div>
         """, unsafe_allow_html=True)
 
