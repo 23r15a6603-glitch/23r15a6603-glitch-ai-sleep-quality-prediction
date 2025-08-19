@@ -2,8 +2,8 @@ import os
 import time
 import joblib
 import pandas as pd
-import numpy as np
 import streamlit as st
+import numpy as np
 
 # ------------------------------
 # ✅ Secure API Key Handling
@@ -35,7 +35,7 @@ try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
 except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl` to your GitHub repo.")
+    st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl`.")
 
 # ------------------------------
 # Streamlit Config
@@ -43,20 +43,61 @@ except FileNotFoundError:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
-# 🌙 Theme Toggle (Sidebar)
-# ------------------------------
-st.sidebar.markdown("## ⚙️ Settings")
-dark_mode = st.sidebar.toggle("🌙 Enable Dark Mode", value=False)
-
-# ------------------------------
-# CSS Themes
+# ✅ CSS Themes
 # ------------------------------
 light_css = """
 <style>
-.stApp { background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%); }
-h1 { font-family: 'Segoe UI'; font-size: 3.4rem; color: #6C3483; text-align: center; margin-bottom: 0.3em; }
-.stPrediction { font-size: 1.3rem; font-weight: 700; background: linear-gradient(90deg, #6C3483, #884ea0);
-    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; }
+.stApp { 
+    background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%); 
+    color: #2c3e50; 
+    transition: all 0.4s ease-in-out;
+}
+h1 { 
+    font-family: 'Segoe UI'; 
+    font-size: 3.4rem; 
+    color: #6C3483; 
+    text-align: center; 
+    margin-bottom: 0.3em; 
+}
+.stPrediction { 
+    font-size: 1.3rem; font-weight: 700; 
+    background: linear-gradient(90deg, #6C3483, #884ea0); 
+    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; 
+}
+
+/* Inputs, Selects, Sliders */
+input, select, textarea {
+    background: #fff !important;
+    color: #2c3e50 !important;
+    border: 2px solid #d6bbe9 !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+    transition: all 0.3s ease-in-out;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #6C3483 !important;
+    box-shadow: 0 0 6px rgba(108, 52, 131, 0.4) !important;
+}
+
+/* Sliders */
+.stSlider > div > div > div > div {
+    background: #6C3483 !important;
+}
+.stSlider > div > div > div {
+    color: #6C3483 !important;
+}
+
+/* Buttons */
+button[kind="primary"] {
+    background: #6C3483 !important;
+    color: white !important;
+    border-radius: 10px !important;
+}
+button[kind="primary"]:hover {
+    background: #884ea0 !important;
+}
+
+/* Chat UI */
 .chat-container { background: #fff; border-radius: 15px; padding: 15px; }
 .chat-bubble-user { background: #d6bbe9; color: #3a0ca3; border-radius: 15px 15px 0 15px; padding: 10px; margin: 5px 0; }
 .chat-bubble-bot { background: #ece8f8; color: #4a235a; border-radius: 15px 15px 15px 0; padding: 10px; margin: 5px 0; }
@@ -65,17 +106,69 @@ h1 { font-family: 'Segoe UI'; font-size: 3.4rem; color: #6C3483; text-align: cen
 
 dark_css = """
 <style>
-.stApp { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #f5f6fa; }
-h1 { font-family: 'Segoe UI'; font-size: 3.4rem; color: #9c88ff; text-align: center; margin-bottom: 0.3em; }
-.stPrediction { font-size: 1.3rem; font-weight: 700; background: linear-gradient(90deg, #9c88ff, #6C3483);
-    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; }
+.stApp { 
+    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
+    color: #f5f6fa; 
+    transition: all 0.4s ease-in-out;
+}
+h1 { 
+    font-family: 'Segoe UI'; 
+    font-size: 3.4rem; 
+    color: #9c88ff; 
+    text-align: center; 
+    margin-bottom: 0.3em; 
+}
+.stPrediction { 
+    font-size: 1.3rem; font-weight: 700; 
+    background: linear-gradient(90deg, #9c88ff, #6C3483); 
+    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; 
+}
+
+/* Inputs, Selects, Sliders */
+input, select, textarea {
+    background: #2d3436 !important;
+    color: #f5f6fa !important;
+    border: 2px solid #9c88ff !important;
+    border-radius: 8px !important;
+    padding: 6px !important;
+    transition: all 0.3s ease-in-out;
+}
+input:focus, select:focus, textarea:focus {
+    border-color: #6C3483 !important;
+    box-shadow: 0 0 6px rgba(156, 136, 255, 0.6) !important;
+}
+
+/* Sliders */
+.stSlider > div > div > div > div {
+    background: #9c88ff !important;
+}
+.stSlider > div > div > div {
+    color: #9c88ff !important;
+}
+
+/* Buttons */
+button[kind="primary"] {
+    background: #9c88ff !important;
+    color: #1a1a2e !important;
+    border-radius: 10px !important;
+}
+button[kind="primary"]:hover {
+    background: #6C3483 !important;
+    color: white !important;
+}
+
+/* Chat UI */
 .chat-container { background: #1e1e2f; border-radius: 15px; padding: 15px; }
 .chat-bubble-user { background: #6c5ce7; color: white; border-radius: 15px 15px 0 15px; padding: 10px; margin: 5px 0; }
 .chat-bubble-bot { background: #2d3436; color: #dfe6e9; border-radius: 15px 15px 15px 0; padding: 10px; margin: 5px 0; }
 </style>
 """
 
-st.markdown(dark_css if dark_mode else light_css, unsafe_allow_html=True)
+# ------------------------------
+# ✅ Theme Toggle
+# ------------------------------
+theme = st.sidebar.radio("🌗 Theme", ["Light", "Dark"])
+st.markdown(light_css if theme == "Light" else dark_css, unsafe_allow_html=True)
 
 # ------------------------------
 # Main Title
@@ -158,6 +251,7 @@ if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
 user_input = st.text_input("Ask your question here:", key="chat_input")
+
 col1, col2 = st.columns([1, 1])
 with col1:
     send = st.button("Send")
@@ -167,15 +261,30 @@ with col2:
 if send and api_key:
     if user_input.strip():
         try:
-            time.sleep(2)  # avoid quota hitting
-            history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
-                       for role, msg in st.session_state.chat_history]
+            time.sleep(1.5)  # avoid quota hitting
+
+            history = [
+                {"role": "user" if role == "You" else "model", "parts": [msg]}
+                for role, msg in st.session_state.chat_history
+            ]
+
             chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
             chat = chat_model.start_chat(history=history)
             response = chat.send_message(user_input)
+
         except Exception as e:
-            response = None
-            st.session_state.chat_history.append(("Bot", f"⚠️ Error: {e}"))
+            if "429" in str(e):  # Quota exceeded
+                try:
+                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                    chat = chat_model.start_chat(history=history)
+                    response = chat.send_message(user_input)
+                except Exception:
+                    st.session_state.chat_history.append(("Bot", "⚠️ Models are out of quota. Try again later."))
+                    response = None
+            else:
+                st.session_state.chat_history.append(("Bot", f"⚠️ Chatbot error: {e}"))
+                response = None
+
         if response:
             st.session_state.chat_history.append(("You", user_input))
             st.session_state.chat_history.append(("Bot", response.text))
@@ -183,10 +292,17 @@ if send and api_key:
 if clear:
     st.session_state.chat_history = []
 
-st.markdown('<div class="chat-container">', unsafe_allow_html=True)
+# Chat container wrapper
+st.markdown('<div class="chat-container" style="display:flex; flex-direction:column;">', unsafe_allow_html=True)
+
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.markdown(f"<div class='chat-bubble-user'>{msg}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="chat-bubble-user">🧑 {msg}</div>
+        """, unsafe_allow_html=True)
     else:
-        st.markdown(f"<div class='chat-bubble-bot'>{msg}</div>", unsafe_allow_html=True)
+        st.markdown(f"""
+        <div class="chat-bubble-bot">🤖 {msg}</div>
+        """, unsafe_allow_html=True)
+
 st.markdown('</div>', unsafe_allow_html=True)
