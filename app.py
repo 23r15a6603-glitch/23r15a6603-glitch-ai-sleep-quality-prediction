@@ -42,165 +42,70 @@ except FileNotFoundError:
 # ------------------------------
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
-# --- Custom CSS for styling ---
-st.markdown(
-    """
-    <style>
-    /* 🌙 Background Gradient */
-    .stApp {
-        background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%);
-    }
+# ------------------------------
+# 🌙 Theme Toggle
+# ------------------------------
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
 
-    /* ✨ Title Animation */
-    h1 {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        font-size: 3.4rem;
-        color: #6C3483;
-        text-align: center;
-        margin-bottom: 0.3em;
-        animation: fadeInDown 1s ease;
-    }
-    @keyframes fadeInDown {
-        from { opacity: 0; transform: translateY(-20px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
+toggle = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode)
+st.session_state.dark_mode = toggle
 
-    h2, h3 {
-        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-        color: #4A235A;
-    }
+# ------------------------------
+# CSS Themes
+# ------------------------------
+light_css = """
+<style>
+.stApp { background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%); }
+h1 { font-family: 'Segoe UI'; font-size: 3.4rem; color: #6C3483; text-align: center;
+     margin-bottom: 0.3em; animation: fadeInDown 1s ease; }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px);} to { opacity: 1; transform: translateY(0);} }
+.stSuccess { font-size: 1.3rem; font-weight: 700; color: #fff !important;
+     background: linear-gradient(90deg, #6C3483, #884ea0); border-radius: 15px; padding: 15px 20px;
+     box-shadow: 0 0 18px rgba(108,52,131,0.6); }
+.form-container { background: #f9f6fb; padding: 25px 30px; border-radius: 15px;
+     box-shadow: 0 6px 15px rgb(108 52 131 / 0.15); margin-bottom: 30px; }
+.chat-container { background: #fff; padding: 20px 25px; border-radius: 20px;
+     box-shadow: 0 8px 20px rgb(108 52 131 / 0.15); max-height: 500px; overflow-y: auto;
+     margin-bottom: 15px; scrollbar-width: thin; scrollbar-color: #6C3483 #f9f6fb; }
+.chat-bubble-user { position: relative; background: #d6bbe9; color: #3a0ca3; padding: 12px 18px;
+     border-radius: 18px 18px 0 18px; max-width: 75%; margin-bottom: 12px; font-weight: 600;
+     align-self: flex-end; box-shadow: 0 2px 6px rgb(108 52 131 / 0.2); }
+.chat-bubble-user::before { content: "🧑"; position: absolute; left: -30px; top: 0; font-size: 1.5rem; }
+.chat-bubble-bot { position: relative; background: #ece8f8; color: #4a235a; padding: 12px 18px;
+     border-radius: 18px 18px 18px 0; max-width: 75%; margin-bottom: 12px; font-weight: 500;
+     align-self: flex-start; box-shadow: 0 2px 6px rgb(108 52 131 / 0.15); }
+.chat-bubble-bot::before { content: "🤖"; position: absolute; left: -30px; top: 0; font-size: 1.5rem; }
+</style>
+"""
 
-    /* 🔮 Prediction Result Glow */
-    .stSuccess {
-        font-size: 1.3rem;
-        font-weight: 700;
-        color: #fff !important;
-        background: linear-gradient(90deg, #6C3483, #884ea0);
-        border-radius: 15px;
-        padding: 15px 20px;
-        box-shadow: 0 0 18px rgba(108, 52, 131, 0.6);
-    }
+dark_css = """
+<style>
+.stApp { background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); color: #f5f6fa; }
+h1 { font-family: 'Segoe UI'; font-size: 3.4rem; color: #9c88ff; text-align: center;
+     margin-bottom: 0.3em; animation: fadeInDown 1s ease; }
+@keyframes fadeInDown { from { opacity: 0; transform: translateY(-20px);} to { opacity: 1; transform: translateY(0);} }
+.stSuccess { font-size: 1.3rem; font-weight: 700; color: #fff !important;
+     background: linear-gradient(90deg, #9c88ff, #6C3483); border-radius: 15px; padding: 15px 20px;
+     box-shadow: 0 0 18px rgba(156,136,255,0.6); }
+.form-container { background: #222f45; padding: 25px 30px; border-radius: 15px;
+     box-shadow: 0 6px 15px rgba(156,136,255,0.2); margin-bottom: 30px; }
+.chat-container { background: #1e1e2f; padding: 20px 25px; border-radius: 20px;
+     box-shadow: 0 8px 20px rgba(156,136,255,0.15); max-height: 500px; overflow-y: auto;
+     margin-bottom: 15px; scrollbar-width: thin; scrollbar-color: #9c88ff #1a1a2e; }
+.chat-bubble-user { position: relative; background: #6c5ce7; color: #fff; padding: 12px 18px;
+     border-radius: 18px 18px 0 18px; max-width: 75%; margin-bottom: 12px; font-weight: 600;
+     align-self: flex-end; box-shadow: 0 2px 6px rgba(156,136,255,0.3); }
+.chat-bubble-user::before { content: "🧑"; position: absolute; left: -30px; top: 0; font-size: 1.5rem; }
+.chat-bubble-bot { position: relative; background: #2d3436; color: #dfe6e9; padding: 12px 18px;
+     border-radius: 18px 18px 18px 0; max-width: 75%; margin-bottom: 12px; font-weight: 500;
+     align-self: flex-start; box-shadow: 0 2px 6px rgba(156,136,255,0.2); }
+.chat-bubble-bot::before { content: "🤖"; position: absolute; left: -30px; top: 0; font-size: 1.5rem; }
+</style>
+"""
 
-    /* 🎨 Input Styling */
-    .stNumberInput input, .stSelectbox, .stSlider {
-        border-radius: 10px;
-        border: 2px solid #d6bbe9;
-        padding: 6px;
-    }
-    .stNumberInput input:focus, .stSelectbox:focus {
-        border-color: #6C3483 !important;
-        box-shadow: 0 0 8px rgba(108, 52, 131, 0.5);
-    }
-
-    /* Form container */
-    .form-container {
-        background: #f9f6fb;
-        padding: 25px 30px;
-        border-radius: 15px;
-        box-shadow: 0 6px 15px rgb(108 52 131 / 0.15);
-        margin-bottom: 30px;
-    }
-
-    /* Submit button */
-    div.stButton > button:first-child {
-        background-color: #6C3483;
-        color: white;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-weight: 700;
-        transition: background-color 0.3s ease;
-        box-shadow: 0 4px 8px rgb(108 52 131 / 0.3);
-    }
-    div.stButton > button:first-child:hover {
-        background-color: #884ea0;
-        color: #fff;
-    }
-
-    /* Clear button styling */
-    div.stButton > button:last-child {
-        background-color: #bbb;
-        color: #4a235a;
-        border-radius: 10px;
-        padding: 10px 20px;
-        font-weight: 600;
-        margin-left: 10px;
-        transition: background-color 0.3s ease;
-    }
-    div.stButton > button:last-child:hover {
-        background-color: #999;
-        color: #fff;
-    }
-
-    /* 💬 Chat Container */
-    .chat-container {
-        background: #fff;
-        padding: 20px 25px;
-        border-radius: 20px;
-        box-shadow: 0 8px 20px rgb(108 52 131 / 0.15);
-        max-height: 500px;
-        overflow-y: auto;
-        margin-bottom: 15px;
-        scrollbar-width: thin;
-        scrollbar-color: #6C3483 #f9f6fb;
-    }
-
-    /* 🌐 Custom Scrollbar */
-    .chat-container::-webkit-scrollbar {
-        width: 8px;
-    }
-    .chat-container::-webkit-scrollbar-thumb {
-        background: #6C3483;
-        border-radius: 10px;
-    }
-    .chat-container::-webkit-scrollbar-track {
-        background: #f9f6fb;
-    }
-
-    /* 👤 User bubble with avatar */
-    .chat-bubble-user {
-        position: relative;
-        background: #d6bbe9;
-        color: #3a0ca3;
-        padding: 12px 18px;
-        border-radius: 18px 18px 0 18px;
-        max-width: 75%;
-        margin-bottom: 12px;
-        font-weight: 600;
-        align-self: flex-end;
-        box-shadow: 0 2px 6px rgb(108 52 131 / 0.2);
-    }
-    .chat-bubble-user::before {
-        content: "🧑";
-        position: absolute;
-        left: -30px;
-        top: 0;
-        font-size: 1.5rem;
-    }
-
-    /* 🤖 Bot bubble with avatar */
-    .chat-bubble-bot {
-        position: relative;
-        background: #ece8f8;
-        color: #4a235a;
-        padding: 12px 18px;
-        border-radius: 18px 18px 18px 0;
-        max-width: 75%;
-        margin-bottom: 12px;
-        font-weight: 500;
-        align-self: flex-start;
-        box-shadow: 0 2px 6px rgb(108 52 131 / 0.15);
-    }
-    .chat-bubble-bot::before {
-        content: "🤖";
-        position: absolute;
-        left: -30px;
-        top: 0;
-        font-size: 1.5rem;
-    }
-    </style>
-    """,
-    unsafe_allow_html=True,
-)
+# Apply selected theme
+st.markdown(dark_css if st.session_state.dark_mode else light_css, unsafe_allow_html=True)
 
 # ------------------------------
 # Main Title
@@ -333,12 +238,8 @@ st.markdown('<div class="chat-container" style="display:flex; flex-direction:col
 
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.markdown(f"""
-        <div class="chat-bubble-user">{msg}</div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="chat-bubble-user">{msg}</div>""", unsafe_allow_html=True)
     else:
-        st.markdown(f"""
-        <div class="chat-bubble-bot">{msg}</div>
-        """, unsafe_allow_html=True)
+        st.markdown(f"""<div class="chat-bubble-bot">{msg}</div>""", unsafe_allow_html=True)
 
 st.markdown('</div>', unsafe_allow_html=True)
