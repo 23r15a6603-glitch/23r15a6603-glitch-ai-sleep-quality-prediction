@@ -8,10 +8,8 @@ import streamlit as st
 # ------------------------------
 # ✅ Secure API Key Handling
 # ------------------------------
-# Try Streamlit secrets first (Cloud)
 api_key = st.secrets.get("GEMINI_API_KEY")
 
-# Fallback: .env for local development
 if not api_key:
     try:
         from dotenv import load_dotenv
@@ -36,7 +34,6 @@ model, scaler = None, None
 try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
-    # Removed "✅ Model loaded successfully" message
 except FileNotFoundError:
     st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl` to your GitHub repo.")
 
@@ -45,10 +42,122 @@ except FileNotFoundError:
 # ------------------------------
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
+# --- Custom CSS for styling ---
+st.markdown(
+    """
+    <style>
+    /* Main Title */
+    h1 {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        font-size: 3.2rem;
+        color: #6C3483;
+        text-align: center;
+        margin-bottom: 0.1em;
+    }
+
+    /* Subtitle */
+    h2, h3 {
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        color: #4A235A;
+    }
+
+    /* Form container */
+    .form-container {
+        background: #f9f6fb;
+        padding: 25px 30px;
+        border-radius: 15px;
+        box-shadow: 0 6px 15px rgb(108 52 131 / 0.15);
+        margin-bottom: 30px;
+    }
+
+    /* Input labels */
+    label {
+        font-weight: 600;
+        color: #4A235A;
+    }
+
+    /* Submit button */
+    div.stButton > button:first-child {
+        background-color: #6C3483;
+        color: white;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 700;
+        transition: background-color 0.3s ease;
+        box-shadow: 0 4px 8px rgb(108 52 131 / 0.3);
+    }
+    div.stButton > button:first-child:hover {
+        background-color: #884ea0;
+        color: #fff;
+    }
+
+    /* Chat Section */
+    .chat-container {
+        background: #fff;
+        padding: 20px 25px;
+        border-radius: 15px;
+        box-shadow: 0 6px 15px rgb(108 52 131 / 0.15);
+        max-height: 450px;
+        overflow-y: auto;
+        margin-bottom: 10px;
+    }
+
+    /* Chat bubbles */
+    .chat-bubble-user {
+        background: #d6bbe9;
+        color: #3a0ca3;
+        padding: 12px 18px;
+        border-radius: 18px 18px 0 18px;
+        max-width: 80%;
+        margin-bottom: 10px;
+        font-weight: 600;
+        align-self: flex-end;
+        box-shadow: 0 2px 6px rgb(108 52 131 / 0.2);
+    }
+
+    .chat-bubble-bot {
+        background: #ece8f8;
+        color: #4a235a;
+        padding: 12px 18px;
+        border-radius: 18px 18px 18px 0;
+        max-width: 80%;
+        margin-bottom: 10px;
+        font-weight: 500;
+        align-self: flex-start;
+        box-shadow: 0 2px 6px rgb(108 52 131 / 0.1);
+    }
+
+    /* Chat role label */
+    .chat-role {
+        font-size: 0.85rem;
+        font-weight: 700;
+        margin-bottom: 3px;
+        color: #6C3483;
+    }
+
+    /* Clear button styling */
+    div.stButton > button:last-child {
+        background-color: #bbb;
+        color: #4a235a;
+        border-radius: 10px;
+        padding: 10px 20px;
+        font-weight: 600;
+        margin-left: 10px;
+        transition: background-color 0.3s ease;
+    }
+    div.stButton > button:last-child:hover {
+        background-color: #999;
+        color: #fff;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True,
+)
+
 # ------------------------------
 # Main Title
 # ------------------------------
-st.markdown("<h1 style='text-align: center; color: #6C3483;'>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
+st.markdown("<h1>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ------------------------------
@@ -57,6 +166,7 @@ st.markdown("---")
 st.subheader("🔍 Sleep Quality Predictor")
 
 with st.form("sleep_form"):
+    st.markdown('<div class="form-container">', unsafe_allow_html=True)
     st.write("Enter your Health and Lifestyle Factors")
     colA, colB, colC = st.columns(3)
 
@@ -86,6 +196,7 @@ with st.form("sleep_form"):
         water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
     submitted = st.form_submit_button("Predict Sleep Quality")
+    st.markdown('</div>', unsafe_allow_html=True)
 
 if submitted:
     if model and scaler:
@@ -136,14 +247,13 @@ with col2:
 if send and api_key:
     if user_input.strip():
         try:
-            time.sleep(2)  # ✅ avoid hitting per-minute quota
+            time.sleep(2)  # avoid quota hitting
 
             history = [
                 {"role": "user" if role == "You" else "model", "parts": [msg]}
                 for role, msg in st.session_state.chat_history
             ]
 
-            # Try PRO model first
             chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
             chat = chat_model.start_chat(history=history)
             response = chat.send_message(user_input)
@@ -170,9 +280,19 @@ if send and api_key:
 if clear:
     st.session_state.chat_history = []
 
-# Display chat history
+# Chat container wrapper for scroll
+st.markdown('<div class="chat-container" style="display:flex; flex-direction:column;">', unsafe_allow_html=True)
+
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.markdown(f"**🧑 {role}:** {msg}")
+        st.markdown(f"""
+        <div class="chat-role">🧑 {role}:</div>
+        <div class="chat-bubble-user">{msg}</div>
+        """, unsafe_allow_html=True)
     else:
-        st.markdown(f"**🤖 {role}:** {msg}")
+        st.markdown(f"""
+        <div class="chat-role">🤖 {role}:</div>
+        <div class="chat-bubble-bot">{msg}</div>
+        """, unsafe_allow_html=True)
+
+st.markdown('</div>', unsafe_allow_html=True)
