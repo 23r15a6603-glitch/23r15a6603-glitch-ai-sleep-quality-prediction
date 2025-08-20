@@ -48,23 +48,30 @@ st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide"
 st.markdown(
     """
     <style>
-    /* Main background */
-    body {
+    /* Background */
+    .stApp {
         background: linear-gradient(to right, #1e3c72, #2a5298);
-        color: white;
-    }
-
-    /* Titles */
-    .stApp h1, .stApp h2, .stApp h3 {
-        color: #ffffff !important;
         font-family: 'Poppins', sans-serif;
     }
 
-    /* Input styling */
-    .stNumberInput, .stSelectbox, .stSlider {
-        background: #ffffff10;
+    /* Titles */
+    h1, h2, h3 {
+        color: #ffffff !important;
+        font-weight: 600;
+    }
+
+    /* Normal text */
+    .stMarkdown, label, .stText, .stNumberInput label, .stSelectbox label, .stSlider label {
+        color: #000000 !important;
+        font-size: 15px;
+    }
+
+    /* Input fields */
+    .stTextInput input, .stNumberInput input, .stSelectbox div, .stSlider {
+        background: #ffffff !important;
+        color: #000000 !important;
         border-radius: 12px;
-        padding: 10px;
+        padding: 6px;
     }
 
     /* Buttons */
@@ -82,13 +89,22 @@ st.markdown(
         transform: scale(1.05);
     }
 
-    /* Chat messages */
+    /* Predictor Card */
+    .predictor-card {
+        background: #ffffff;
+        padding: 20px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        margin-bottom: 20px;
+    }
+
+    /* Chat container */
     .chat-container {
         max-height: 400px;
         overflow-y: auto;
         padding: 10px;
         border-radius: 15px;
-        background: #ffffff10;
+        background: #ffffff20;
         margin-bottom: 15px;
     }
     .user-msg {
@@ -119,8 +135,9 @@ st.title("🌙 AI-Based Sleep Quality Prediction")
 st.markdown("---")
 
 # ------------------------------
-# Predictor Section
+# Predictor Section (Card UI)
 # ------------------------------
+st.markdown('<div class="predictor-card">', unsafe_allow_html=True)
 st.subheader("🔍 Sleep Quality Predictor")
 
 with st.form("sleep_form"):
@@ -183,6 +200,8 @@ if submitted:
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
+st.markdown('</div>', unsafe_allow_html=True)
+
 # ------------------------------
 # Chatbot Section (Bottom)
 # ------------------------------
@@ -203,7 +222,7 @@ with col2:
 if send and api_key:
     if user_input.strip():
         try:
-            time.sleep(1.5)  # avoid quota hitting
+            time.sleep(1.0)  # avoid quota hitting
 
             history = [
                 {"role": "user" if role == "You" else "model", "parts": [msg]}
