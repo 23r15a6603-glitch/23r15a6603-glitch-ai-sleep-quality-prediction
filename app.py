@@ -122,13 +122,46 @@ with tab1:
 # ------------------------------
 # TAB 2: Sleep AI Chatbot
 # ------------------------------
+# ------------------------------
+# TAB 2: Sleep AI Support Assistant
+# ------------------------------
 with tab2:
-    st.subheader("💬 Sleep AI Chatbot")
+    st.subheader("💬 Sleep Support Assistant")
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_input = st.text_input("Ask your question here:", key="chat_input")
+    # Chat Container (scrollable)
+    chat_container = st.container()
+
+    # Display chat history in styled bubbles
+    with chat_container:
+        for role, msg in st.session_state.chat_history:
+            if role == "You":
+                st.markdown(
+                    f"""
+                    <div style='text-align: right; margin: 5px;'>
+                        <span style='background-color:#DCF8C6; padding:10px; border-radius:15px; display:inline-block;'>
+                            🧑 {msg}
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <div style='text-align: left; margin: 5px;'>
+                        <span style='background-color:#EDEDED; padding:10px; border-radius:15px; display:inline-block;'>
+                            🤖 {msg}
+                        </span>
+                    </div>
+                    """,
+                    unsafe_allow_html=True
+                )
+
+    # Input area
+    user_input = st.text_input("Type your message...", key="chat_input")
 
     col1, col2 = st.columns([1, 1])
     with col1:
@@ -139,7 +172,7 @@ with tab2:
     if send and api_key:
         if user_input.strip():
             try:
-                time.sleep(1.5)  # avoid quota hitting
+                time.sleep(1.2)  # avoid quota hitting
 
                 history = [
                     {"role": "user" if role == "You" else "model", "parts": [msg]}
@@ -157,22 +190,16 @@ with tab2:
                         chat = chat_model.start_chat(history=history)
                         response = chat.send_message(user_input)
                     except Exception:
-                        st.session_state.chat_history.append(("Bot", "⚠️ Models are out of quota. Try again later."))
                         response = None
+                        st.session_state.chat_history.append(("Bot", "⚠️ Support system is busy. Try again later."))
                 else:
-                    st.session_state.chat_history.append(("Bot", f"⚠️ Chatbot error: {e}"))
                     response = None
+                    st.session_state.chat_history.append(("Bot", f"⚠️ Support error: {e}"))
 
+            # Append new messages
+            st.session_state.chat_history.append(("You", user_input))
             if response:
-                st.session_state.chat_history.append(("You", user_input))
                 st.session_state.chat_history.append(("Bot", response.text))
 
     if clear:
         st.session_state.chat_history = []
-
-    # Display chat history
-    for role, msg in st.session_state.chat_history:
-        if role == "You":
-            st.info(f"🧑 {msg}")
-        else:
-            st.success(f"🤖 {msg}")
