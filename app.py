@@ -18,7 +18,6 @@ if not api_key:
     except:
         api_key = None
 
-# Import after checking API key to avoid errors when not available
 if api_key:
     try:
         import google.generativeai as genai
@@ -53,85 +52,137 @@ except Exception as e:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
-# 🌈 Custom Styling
+# 🌈 Fixed Styling for Better Visibility
 # ------------------------------
 st.markdown(
     """
     <style>
-    /* Background */
+    /* Background with better contrast */
     .stApp {
-        background: linear-gradient(to right, #1e3c72, #2a5298);
+        background: linear-gradient(135deg, #0d1b2a 0%, #1b263b 100%);
         font-family: 'Poppins', sans-serif;
     }
+    
+    /* Main content container */
+    .main {
+        background-color: rgba(255, 255, 255, 0.95);
+        padding: 20px;
+        border-radius: 15px;
+        margin: 15px 0;
+    }
 
-    /* Titles */
+    /* Titles with better contrast */
     h1, h2, h3 {
         color: #ffffff !important;
         font-weight: 600;
+        text-shadow: 1px 1px 3px rgba(0, 0, 0, 0.7);
     }
 
-    /* Normal text */
-    .stMarkdown, label, .stText, .stNumberInput label, .stSelectbox label, .stSlider label {
+    /* All text elements with proper contrast */
+    .stMarkdown, p, label, .stText, .stNumberInput label, 
+    .stSelectbox label, .stSlider label, .stTextInput label {
         color: #000000 !important;
-        font-size: 15px;
+        font-size: 16px;
+        font-weight: 500;
     }
 
-    /* Input fields */
-    .stTextInput input, .stNumberInput input, .stSelectbox div, .stSlider {
+    /* Input fields with better visibility */
+    .stTextInput input, .stNumberInput input, .stSelectbox select, 
+    .stSlider div, .stTextInput>div>div, .stNumberInput>div>div {
         background: #ffffff !important;
         color: #000000 !important;
-        border-radius: 12px;
-        padding: 6px;
+        border-radius: 8px;
+        padding: 8px;
+        border: 1px solid #ccc;
     }
 
-    /* Buttons */
+    /* Buttons with better contrast */
     div.stButton > button {
-        background-color: #ff6600;
+        background-color: #ff6b35;
         color: white;
         border-radius: 12px;
         font-size: 16px;
         padding: 10px 20px;
         border: none;
         transition: 0.3s;
+        font-weight: 600;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
     }
     div.stButton > button:hover {
         background-color: #e65c00;
         transform: scale(1.05);
+        box-shadow: 0 6px 8px rgba(0, 0, 0, 0.15);
     }
 
-    /* Predictor Card */
+    /* Predictor Card with better contrast */
     .predictor-card {
         background: #ffffff;
-        padding: 20px;
+        padding: 25px;
         border-radius: 15px;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.2);
-        margin-bottom: 20px;
+        box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+        margin-bottom: 25px;
+        border: 1px solid #e0e0e0;
     }
 
-    /* Chat container */
+    /* Chat container with better contrast */
     .chat-container {
         max-height: 400px;
         overflow-y: auto;
-        padding: 10px;
+        padding: 15px;
         border-radius: 15px;
-        background: #ffffff20;
-        margin-bottom: 15px;
+        background: #f9f9f9;
+        margin-bottom: 20px;
+        border: 1px solid #e0e0e0;
     }
+    
+    /* Chat messages with better contrast */
     .user-msg {
-        background: #ff6600;
+        background: #ff6b35;
         color: white;
-        padding: 10px 15px;
-        border-radius: 15px 15px 0px 15px;
-        margin: 8px 0;
+        padding: 12px 16px;
+        border-radius: 18px 18px 0px 18px;
+        margin: 10px 0;
         text-align: right;
+        max-width: 80%;
+        margin-left: auto;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
     .bot-msg {
-        background: #2a5298;
+        background: #415a77;
         color: white;
-        padding: 10px 15px;
-        border-radius: 15px 15px 15px 0px;
-        margin: 8px 0;
+        padding: 12px 16px;
+        border-radius: 18px 18px 18px 0px;
+        margin: 10px 0;
         text-align: left;
+        max-width: 80%;
+        box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+    }
+    
+    /* Form labels with better visibility */
+    .stForm {
+        background-color: #f8f9fa;
+        padding: 20px;
+        border-radius: 12px;
+        border: 1px solid #e0e0e0;
+    }
+    
+    /* Section headers */
+    .section-header {
+        background: linear-gradient(90deg, #415a77 0%, #1b263b 100%);
+        color: white;
+        padding: 12px 20px;
+        border-radius: 10px;
+        margin: 15px 0;
+    }
+    
+    /* Success and error messages */
+    .stSuccess {
+        background-color: #4caf50;
+        color: white;
+    }
+    .stError {
+        background-color: #f44336;
+        color: white;
     }
     </style>
     """,
@@ -141,12 +192,14 @@ st.markdown(
 # ------------------------------
 # Main Title
 # ------------------------------
+st.markdown("<div class='section-header'>", unsafe_allow_html=True)
 st.title("🌙 AI-Based Sleep Quality Prediction")
-st.markdown("---")
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------
 # Predictor Section (Card UI)
 # ------------------------------
+st.markdown("<div class='main'>", unsafe_allow_html=True)
 st.markdown('<div class="predictor-card">', unsafe_allow_html=True)
 st.subheader("🔍 Sleep Quality Predictor")
 
@@ -218,8 +271,9 @@ st.markdown('</div>', unsafe_allow_html=True)
 # ------------------------------
 # Chatbot Section (Bottom)
 # ------------------------------
-st.markdown("---")
+st.markdown("<div class='section-header'>", unsafe_allow_html=True)
 st.subheader("💬 Sleep AI Chatbot")
+st.markdown("</div>", unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -277,3 +331,4 @@ for role, msg in st.session_state.chat_history:
     else:
         st.markdown(f'<div class="bot-msg">🤖 {msg}</div>', unsafe_allow_html=True)
 st.markdown('</div>', unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
