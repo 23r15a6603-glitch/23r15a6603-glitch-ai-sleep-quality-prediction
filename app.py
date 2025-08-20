@@ -43,83 +43,9 @@ except FileNotFoundError:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
-# ✅ Custom Dark Neon Glow CSS
-# ------------------------------
-st.markdown("""
-    <style>
-    /* Dark background */
-    .stApp {
-        background-color: #0d0d0d;
-        color: #f5f5f5;
-    }
-
-    /* Title Glow */
-    .glow-title {
-        font-size: 42px;
-        font-weight: bold;
-        color: #fff;
-        text-align: center;
-        text-shadow: 0 0 5px #00ffe0, 0 0 10px #00ffe0, 0 0 20px #00ffe0, 0 0 40px #00ffe0;
-    }
-
-    /* Result Glow */
-    .glow-result {
-        font-size: 28px;
-        font-weight: bold;
-        color: #39ff14;
-        text-align: center;
-        text-shadow: 0 0 5px #39ff14, 0 0 10px #39ff14, 0 0 20px #39ff14;
-    }
-
-    /* Chatbot Glow */
-    .glow-bot {
-        font-size: 18px;
-        font-weight: bold;
-        color: #ffd700;
-        text-shadow: 0 0 5px #ffd700, 0 0 10px #ffd700, 0 0 15px #ffd700;
-    }
-
-    .glow-user {
-        font-size: 18px;
-        font-weight: bold;
-        color: #00bfff;
-        text-shadow: 0 0 5px #00bfff, 0 0 10px #00bfff, 0 0 15px #00bfff;
-    }
-
-    /* Button Glow */
-    div.stButton > button {
-        border-radius: 10px;
-        padding: 10px 24px;
-        font-size: 16px;
-        font-weight: bold;
-        background-color: #111;
-        color: white;
-        border: 2px solid #00ffe0;
-        text-shadow: 0 0 5px #00ffe0;
-        transition: 0.3s;
-    }
-    div.stButton > button:hover {
-        background-color: #00ffe0;
-        color: black;
-        box-shadow: 0 0 10px #00ffe0, 0 0 20px #00ffe0, 0 0 30px #00ffe0;
-    }
-
-    /* Input & Sliders styling */
-    .stNumberInput input, .stTextInput input {
-        background-color: #1a1a1a;
-        color: #00ffe0;
-        border: 1px solid #00ffe0;
-    }
-    .stSelectbox div, .stSlider {
-        color: #f5f5f5 !important;
-    }
-    </style>
-""", unsafe_allow_html=True)
-
-# ------------------------------
 # Main Title
 # ------------------------------
-st.markdown('<p class="glow-title">AI-Based Sleep Quality Prediction</p>', unsafe_allow_html=True)
+st.title("AI-Based Sleep Quality Prediction")
 st.markdown("---")
 
 # ------------------------------
@@ -183,7 +109,7 @@ if submitted:
         label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
         result = label_map.get(prediction, "Unknown")
 
-        st.markdown(f'<p class="glow-result">🌙 Predicted Sleep Quality: {result}</p>', unsafe_allow_html=True)
+        st.success(f"🌙 Predicted Sleep Quality: {result}")
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
@@ -238,9 +164,9 @@ if send and api_key:
 if clear:
     st.session_state.chat_history = []
 
-# Display chat history with glow
+# Display chat history
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.markdown(f'<p class="glow-user">🧑 {msg}</p>', unsafe_allow_html=True)
+        st.info(f"🧑 {msg}")
     else:
-        st.markdown(f'<p class="glow-bot">🤖 {msg}</p>', unsafe_allow_html=True)
+        st.success(f"🤖 {msg}")
