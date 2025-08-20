@@ -18,11 +18,18 @@ if not api_key:
     except:
         api_key = None
 
-import google.generativeai as genai
+# Import after checking API key to avoid errors when not available
 if api_key:
-    genai.configure(api_key=api_key)
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=api_key)
+        gemini_available = True
+    except ImportError:
+        st.warning("⚠️ Google Generative AI package not installed. Run: pip install google-generativeai")
+        gemini_available = False
 else:
     st.warning("⚠️ Gemini API Key not found. Please set GEMINI_API_KEY in .env (local) or Streamlit Secrets (cloud).")
+    gemini_available = False
 
 # ------------------------------
 # ✅ Load ML model and scaler safely
@@ -32,10 +39,13 @@ SCALER_PATH = "scaler_sleep_quality.pkl"
 
 model, scaler = None, None
 try:
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl`.")
+    if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
+        model = joblib.load(MODEL_PATH)
+        scaler = joblib.load(SCALER_PATH)
+    else:
+        st.error(f"❌ Model files not found. Please ensure {MODEL_PATH} and {SCALER_PATH} exist.")
+except Exception as e:
+    st.error(f"❌ Error loading model/scaler: {str(e)}")
 
 # ------------------------------
 # Streamlit Config
@@ -191,12 +201,15 @@ if submitted:
             'Daily Water Intake (litres)': [water]
         })
 
-        scaled_input = scaler.transform(input_data)
-        prediction = model.predict(scaled_input)[0]
-        label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
-        result = label_map.get(prediction, "Unknown")
+        try:
+            scaled_input = scaler.transform(input_data)
+            prediction = model.predict(scaled_input)[0]
+            label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
+            result = label_map.get(prediction, "Unknown")
 
-        st.success(f"🌙 Predicted Sleep Quality: {result}")
+            st.success(f"🌙 Predicted Sleep Quality: {result}")
+        except Exception as e:
+            st.error(f"❌ Error during prediction: {str(e)}")
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
@@ -219,39 +232,42 @@ with col1:
 with col2:
     clear = st.button("Clear Chat")
 
-if send and api_key:
-    if user_input.strip():
-        try:
-            time.sleep(1.0)  # avoid quota hitting
-
-            history = [
-                {"role": "user" if role == "You" else "model", "parts": [msg]}
-                for role, msg in st.session_state.chat_history
-            ]
-
-            chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-            chat = chat_model.start_chat(history=history)
-            response = chat.send_message(user_input)
-
-        except Exception as e:
-            if "429" in str(e):  # Quota exceeded
-                try:
-                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                    chat = chat_model.start_chat(history=history)
-                    response = chat.send_message(user_input)
-                except Exception:
-                    st.session_state.chat_history.append(("Bot", "⚠️ Models are out of quota. Try again later."))
-                    response = None
-            else:
-                st.session_state.chat_history.append(("Bot", f"⚠️ Chatbot error: {e}"))
-                response = None
-
-        if response:
-            st.session_state.chat_history.append(("You", user_input))
-            st.session_state.chat_history.append(("Bot", response.text))
-
 if clear:
     st.session_state.chat_history = []
+    st.rerun()
+
+if send and user_input.strip():
+    if not gemini_available:
+        st.session_state.chat_history.append(("You", user_input))
+        st.session_state.chat_history.append(("Bot", "⚠️ Gemini API is not configured. Please check your API key."))
+    else:
+        try:
+            st.session_state.chat_history.append(("You", user_input))
+            
+            # Prepare history in the format Gemini expects
+            history_for_api = []
+            for role, msg in st.session_state.chat_history[:-1]:  # All but the latest user message
+                history_for_api.append({
+                    "role": "user" if role == "You" else "model",
+                    "parts": [msg]
+                })
+            
+            # Generate response
+            model_name = "gemini-pro"  # Using the stable model
+            chat_model = genai.GenerativeModel(model_name)
+            chat = chat_model.start_chat(history=history_for_api)
+            
+            with st.spinner("Thinking..."):
+                response = chat.send_message(user_input)
+                bot_response = response.text
+            
+            st.session_state.chat_history.append(("Bot", bot_response))
+            
+        except Exception as e:
+            error_msg = f"⚠️ Error: {str(e)}"
+            if "quota" in str(e).lower():
+                error_msg = "⚠️ API quota exceeded. Please try again later."
+            st.session_state.chat_history.append(("Bot", error_msg))
 
 # Display chat history with styled bubbles
 st.markdown('<div class="chat-container">', unsafe_allow_html=True)
