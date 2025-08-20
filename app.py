@@ -43,137 +43,9 @@ except FileNotFoundError:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
-# ✅ CSS Themes
-# ------------------------------
-light_css = """
-<style>
-.stApp { 
-    background: linear-gradient(135deg, #f3e6f9 0%, #f9f6fb 100%); 
-    color: #2c3e50; 
-    transition: all 0.4s ease-in-out;
-}
-h1 { 
-    font-family: 'Segoe UI'; 
-    font-size: 3.4rem; 
-    color: #6C3483; 
-    text-align: center; 
-    margin-bottom: 0.3em; 
-}
-.stPrediction { 
-    font-size: 1.3rem; font-weight: 700; 
-    background: linear-gradient(90deg, #6C3483, #884ea0); 
-    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; 
-}
-
-/* Inputs, Selects, Sliders */
-input, select, textarea {
-    background: #fff !important;
-    color: #2c3e50 !important;
-    border: 2px solid #d6bbe9 !important;
-    border-radius: 8px !important;
-    padding: 6px !important;
-    transition: all 0.3s ease-in-out;
-}
-input:focus, select:focus, textarea:focus {
-    border-color: #6C3483 !important;
-    box-shadow: 0 0 6px rgba(108, 52, 131, 0.4) !important;
-}
-
-/* Sliders */
-.stSlider > div > div > div > div {
-    background: #6C3483 !important;
-}
-.stSlider > div > div > div {
-    color: #6C3483 !important;
-}
-
-/* Buttons */
-button[kind="primary"] {
-    background: #6C3483 !important;
-    color: white !important;
-    border-radius: 10px !important;
-}
-button[kind="primary"]:hover {
-    background: #884ea0 !important;
-}
-
-/* Chat UI */
-.chat-container { background: #fff; border-radius: 15px; padding: 15px; }
-.chat-bubble-user { background: #d6bbe9; color: #3a0ca3; border-radius: 15px 15px 0 15px; padding: 10px; margin: 5px 0; }
-.chat-bubble-bot { background: #ece8f8; color: #4a235a; border-radius: 15px 15px 15px 0; padding: 10px; margin: 5px 0; }
-</style>
-"""
-
-dark_css = """
-<style>
-.stApp { 
-    background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); 
-    color: #f5f6fa; 
-    transition: all 0.4s ease-in-out;
-}
-h1 { 
-    font-family: 'Segoe UI'; 
-    font-size: 3.4rem; 
-    color: #9c88ff; 
-    text-align: center; 
-    margin-bottom: 0.3em; 
-}
-.stPrediction { 
-    font-size: 1.3rem; font-weight: 700; 
-    background: linear-gradient(90deg, #9c88ff, #6C3483); 
-    color: white; padding: 12px 18px; border-radius: 12px; text-align: center; 
-}
-
-/* Inputs, Selects, Sliders */
-input, select, textarea {
-    background: #2d3436 !important;
-    color: #f5f6fa !important;
-    border: 2px solid #9c88ff !important;
-    border-radius: 8px !important;
-    padding: 6px !important;
-    transition: all 0.3s ease-in-out;
-}
-input:focus, select:focus, textarea:focus {
-    border-color: #6C3483 !important;
-    box-shadow: 0 0 6px rgba(156, 136, 255, 0.6) !important;
-}
-
-/* Sliders */
-.stSlider > div > div > div > div {
-    background: #9c88ff !important;
-}
-.stSlider > div > div > div {
-    color: #9c88ff !important;
-}
-
-/* Buttons */
-button[kind="primary"] {
-    background: #9c88ff !important;
-    color: #1a1a2e !important;
-    border-radius: 10px !important;
-}
-button[kind="primary"]:hover {
-    background: #6C3483 !important;
-    color: white !important;
-}
-
-/* Chat UI */
-.chat-container { background: #1e1e2f; border-radius: 15px; padding: 15px; }
-.chat-bubble-user { background: #6c5ce7; color: white; border-radius: 15px 15px 0 15px; padding: 10px; margin: 5px 0; }
-.chat-bubble-bot { background: #2d3436; color: #dfe6e9; border-radius: 15px 15px 15px 0; padding: 10px; margin: 5px 0; }
-</style>
-"""
-
-# ------------------------------
-# ✅ Theme Toggle
-# ------------------------------
-theme = st.sidebar.radio("🌗 Theme", ["Light", "Dark"])
-st.markdown(light_css if theme == "Light" else dark_css, unsafe_allow_html=True)
-
-# ------------------------------
 # Main Title
 # ------------------------------
-st.markdown("<h1>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
+st.title("AI-Based Sleep Quality Prediction")
 st.markdown("---")
 
 # ------------------------------
@@ -237,7 +109,7 @@ if submitted:
         label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
         result = label_map.get(prediction, "Unknown")
 
-        st.markdown(f"<div class='stPrediction'>🌙 Predicted Sleep Quality: {result}</div>", unsafe_allow_html=True)
+        st.success(f"🌙 Predicted Sleep Quality: {result}")
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
@@ -292,17 +164,9 @@ if send and api_key:
 if clear:
     st.session_state.chat_history = []
 
-# Chat container wrapper
-st.markdown('<div class="chat-container" style="display:flex; flex-direction:column;">', unsafe_allow_html=True)
-
+# Display chat history
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.markdown(f"""
-        <div class="chat-bubble-user">🧑 {msg}</div>
-        """, unsafe_allow_html=True)
+        st.info(f"🧑 {msg}")
     else:
-        st.markdown(f"""
-        <div class="chat-bubble-bot">🤖 {msg}</div>
-        """, unsafe_allow_html=True)
-
-st.markdown('</div>', unsafe_allow_html=True)
+        st.success(f"🤖 {msg}")
