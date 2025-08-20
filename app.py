@@ -43,10 +43,16 @@ except FileNotFoundError:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
-# ✅ Custom Glow CSS
+# ✅ Custom Dark Neon Glow CSS
 # ------------------------------
 st.markdown("""
     <style>
+    /* Dark background */
+    .stApp {
+        background-color: #0d0d0d;
+        color: #f5f5f5;
+    }
+
     /* Title Glow */
     .glow-title {
         font-size: 42px;
@@ -96,6 +102,16 @@ st.markdown("""
         background-color: #00ffe0;
         color: black;
         box-shadow: 0 0 10px #00ffe0, 0 0 20px #00ffe0, 0 0 30px #00ffe0;
+    }
+
+    /* Input & Sliders styling */
+    .stNumberInput input, .stTextInput input {
+        background-color: #1a1a1a;
+        color: #00ffe0;
+        border: 1px solid #00ffe0;
+    }
+    .stSelectbox div, .stSlider {
+        color: #f5f5f5 !important;
     }
     </style>
 """, unsafe_allow_html=True)
