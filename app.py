@@ -43,9 +43,79 @@ except FileNotFoundError:
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
 # ------------------------------
+# 🌈 Custom Styling
+# ------------------------------
+st.markdown(
+    """
+    <style>
+    /* Main background */
+    body {
+        background: linear-gradient(to right, #1e3c72, #2a5298);
+        color: white;
+    }
+
+    /* Titles */
+    .stApp h1, .stApp h2, .stApp h3 {
+        color: #ffffff !important;
+        font-family: 'Poppins', sans-serif;
+    }
+
+    /* Input styling */
+    .stNumberInput, .stSelectbox, .stSlider {
+        background: #ffffff10;
+        border-radius: 12px;
+        padding: 10px;
+    }
+
+    /* Buttons */
+    div.stButton > button {
+        background-color: #ff6600;
+        color: white;
+        border-radius: 12px;
+        font-size: 16px;
+        padding: 10px 20px;
+        border: none;
+        transition: 0.3s;
+    }
+    div.stButton > button:hover {
+        background-color: #e65c00;
+        transform: scale(1.05);
+    }
+
+    /* Chat messages */
+    .chat-container {
+        max-height: 400px;
+        overflow-y: auto;
+        padding: 10px;
+        border-radius: 15px;
+        background: #ffffff10;
+        margin-bottom: 15px;
+    }
+    .user-msg {
+        background: #ff6600;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 15px 15px 0px 15px;
+        margin: 8px 0;
+        text-align: right;
+    }
+    .bot-msg {
+        background: #2a5298;
+        color: white;
+        padding: 10px 15px;
+        border-radius: 15px 15px 15px 0px;
+        margin: 8px 0;
+        text-align: left;
+    }
+    </style>
+    """,
+    unsafe_allow_html=True
+)
+
+# ------------------------------
 # Main Title
 # ------------------------------
-st.title("AI-Based Sleep Quality Prediction")
+st.title("🌙 AI-Based Sleep Quality Prediction")
 st.markdown("---")
 
 # ------------------------------
@@ -164,10 +234,11 @@ if send and api_key:
 if clear:
     st.session_state.chat_history = []
 
-# Display chat history
+# Display chat history with styled bubbles
+st.markdown('<div class="chat-container">', unsafe_allow_html=True)
 for role, msg in st.session_state.chat_history:
     if role == "You":
-        st.info(f"🧑 {msg}")
+        st.markdown(f'<div class="user-msg">🧑 {msg}</div>', unsafe_allow_html=True)
     else:
-        st.success(f"🤖 {msg}")
-
+        st.markdown(f'<div class="bot-msg">🤖 {msg}</div>', unsafe_allow_html=True)
+st.markdown('</div>', unsafe_allow_html=True)
