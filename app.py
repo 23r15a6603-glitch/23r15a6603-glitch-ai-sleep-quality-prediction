@@ -170,5 +170,3 @@ for role, msg in st.session_state.chat_history:
         st.info(f"🧑 {msg}")
     else:
         st.success(f"🤖 {msg}")
-
-add Styling
