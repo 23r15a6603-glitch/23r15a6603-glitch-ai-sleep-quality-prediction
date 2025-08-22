@@ -4,6 +4,7 @@ import joblib
 import pandas as pd
 import streamlit as st
 import numpy as np
+import google.generativeai as genai
 
 # ------------------------------
 # ✅ Secure API Key Handling
@@ -18,7 +19,6 @@ if not api_key:
     except:
         api_key = None
 
-import google.generativeai as genai
 if api_key:
     genai.configure(api_key=api_key)
 else:
@@ -40,50 +40,66 @@ except FileNotFoundError:
 # ------------------------------
 # Streamlit Config
 # ------------------------------
-st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
+st.set_page_config(page_title="Sleep Quality Predictor", layout="wide")
+
+# ------------------------------
+# Sidebar
+# ------------------------------
+with st.sidebar:
+    st.title("😴 Sleep Quality Predictor")
+    st.markdown("""
+    **About this app:**
+    - Predicts your sleep quality (Good / Fair / Poor)  
+    - Based on health & lifestyle factors  
+    """)
+    st.markdown("---")
+    st.info("Fill out the form on the right 👉 to get your result.")
 
 # ------------------------------
 # Main Title
 # ------------------------------
-st.title("AI-Based Sleep Quality Prediction")
+st.markdown("<h1 style='text-align: center; color: #6C3483;'>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
 st.markdown("---")
 
 # ------------------------------
 # Predictor Section
 # ------------------------------
-st.subheader("🔍 Sleep Quality Predictor")
-
 with st.form("sleep_form"):
-    st.write("Enter your Health and Lifestyle Factors")
-    colA, colB, colC = st.columns(3)
+    st.subheader("Enter your Health and Lifestyle Factors")
+    col1, col2, col3 = st.columns(3)
 
-    with colA:
+    with col1:
         age = st.number_input("Age", 10, 100, 25)
         gender = st.selectbox("Gender", ["Male", "Female"])
         sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
         activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
 
-    with colB:
+    with col2:
         stress = st.slider("Stress Level (1–10)", 1, 10, 5)
         caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
         alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
         smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
 
-    with colC:
+    with col3:
         heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
         screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
         history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
         bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
 
-    colD, colE = st.columns(2)
-    with colD:
+    st.markdown("---")
+
+    col4, col5 = st.columns(2)
+    with col4:
         wake_consistency = st.selectbox("Wake-up Consistency", ["Consistent", "Inconsistent"])
-    with colE:
+    with col5:
         env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
         water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
-    submitted = st.form_submit_button("Predict Sleep Quality")
+    submitted = st.form_submit_button("🔍 Predict Your Sleep Quality")
 
+# ------------------------------
+# Prediction
+# ------------------------------
 if submitted:
     if model and scaler:
         input_data = pd.DataFrame({
@@ -109,7 +125,7 @@ if submitted:
         label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
         result = label_map.get(prediction, "Unknown")
 
-        st.success(f"🌙 Predicted Sleep Quality: {result}")
+        st.success(f"🌙 **Predicted Sleep Quality:** {result}")
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
