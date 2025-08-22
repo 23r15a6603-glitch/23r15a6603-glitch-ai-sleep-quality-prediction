@@ -48,9 +48,11 @@ st.set_page_config(page_title="Sleep Quality Predictor", layout="wide")
 with st.sidebar:
     st.title("😴 Sleep Quality Predictor")
     st.markdown("""
-    *About this app:*
-    - Predicts your sleep quality (Good / Fair / Poor)  
-    - Based on health & lifestyle factors  
+    *About this app:*  
+    - Predicts your sleep quality as Good, Fair, or Poor  
+    - Uses health and lifestyle factors like sleep duration, stress, activity, BMI, and more  
+    - Provides insights to improve your sleep habits  
+    - Includes an AI chatbot to answer your sleep-related questions  
     """)
     st.markdown("---")
     st.info("Fill out the form on the right 👉 to get your result.")
