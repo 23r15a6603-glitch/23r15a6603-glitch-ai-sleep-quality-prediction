@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 import google.generativeai as genai
+from dotenv import load_dotenv
 
 # ==============================
 # Streamlit Config
@@ -16,12 +17,8 @@ st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide"
 # ==============================
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY")
-    except Exception:
-        api_key = None
+    load_dotenv()
+    api_key = os.getenv("GEMINI_API_KEY")
 
 if api_key:
     try:
@@ -29,40 +26,34 @@ if api_key:
     except Exception as e:
         st.warning(f"⚠️ Gemini init warning: {e}")
 else:
-    st.warning("⚠️ Gemini API Key not found. Set GEMINI_API_KEY in .env (local) or Streamlit Secrets (cloud).")
+    st.warning("⚠️ Gemini API Key not found. Set GEMINI_API_KEY in .env or Streamlit Secrets.")
 
 # ==============================
-# ✅ Load ML model and scaler safely
+# ✅ Load ML model and scaler
 # ==============================
 MODEL_PATH = "xgb_sleep_quality_model.pkl"
 SCALER_PATH = "scaler_sleep_quality.pkl"
-
 model, scaler = None, None
+
 try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
 except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl`.")
+    st.error("❌ Model/scaler not found. Upload `xgb_sleep_quality_model.pkl` and `scaler_sleep_quality.pkl`.")
 except Exception as e:
     st.error(f"❌ Error loading model/scaler: {e}")
 
 # ==============================
-# Sidebar (About this app)
+# Sidebar
 # ==============================
 with st.sidebar:
     st.title("😴 Sleep Quality Predictor")
     st.markdown("""
-**About this app:**
-
-- Uses **AI/ML (XGBoost, Random Forest, SVM, etc.)** to predict sleep quality  
-- Considers factors like **age, stress, BMI, screen time, activity, caffeine, alcohol,** and more  
-- Provides prediction: **Fair / Poor**  
-- Built with **Streamlit** for easy public access  
-- Helps users take **early action** to improve sleep health  
-- Includes an optional **AI Chatbot** for lifestyle tips  
+Predict **sleep quality** (Fair / Poor) using **AI/ML**.  
+Factors: age, stress, BMI, screen time, activity, caffeine, alcohol, etc.  
+Optional **AI Chatbot** provides lifestyle tips.  
 """)
-    st.markdown("---")
-    st.info("👉 Fill the form on the right to get your prediction.")
+    st.info("👉 Fill the form on the right for your prediction.")
 
 # ==============================
 # Main Title
@@ -71,7 +62,7 @@ st.markdown("<h1 style='text-align: center; color: #6C3483;'>AI-Based Sleep Qual
 st.markdown("---")
 
 # ==============================
-# Predictor Section
+# Predictor Form
 # ==============================
 with st.form("sleep_form"):
     st.subheader("Enter your Health and Lifestyle Factors")
@@ -110,41 +101,55 @@ with st.form("sleep_form"):
 # ==============================
 if submitted:
     if model is not None and scaler is not None:
-        try:
-            input_data = pd.DataFrame({
-                'Age': [age],
-                'Gender': [1 if gender == "Male" else 0],
-                'Sleep Duration (hrs)': [sleep_duration],
-                'Physical Activity (mins/day)': [activity],
-                'Stress Level (1–10)': [stress],
-                'Caffeine Intake (cups/day)': [caffeine],
-                'Alcohol Intake (units/day)': [alcohol],
-                'Smoking': [1 if smoker == "Yes" else 0],
-                'Heart Rate (bpm)': [heart_rate],
-                'Screen Time Before Bed (hrs)': [screen_time],
-                'Sleep Disorder History': [1 if history == "Yes" else 0],
-                'BMI': [bmi],
-                'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
-                'Sleep Environment Score (1–10)': [env_score],
-                'Daily Water Intake (litres)': [water]
-            })
+        # Input validation
+        if age <= 0 or bmi <= 0 or sleep_duration <= 0:
+            st.warning("⚠️ Please enter valid positive values for Age, BMI, and Sleep Duration.")
+        else:
+            try:
+                input_data = pd.DataFrame({
+                    'Age': [age],
+                    'Gender': [1 if gender == "Male" else 0],
+                    'Sleep Duration (hrs)': [sleep_duration],
+                    'Physical Activity (mins/day)': [activity],
+                    'Stress Level (1–10)': [stress],
+                    'Caffeine Intake (cups/day)': [caffeine],
+                    'Alcohol Intake (units/day)': [alcohol],
+                    'Smoking': [1 if smoker == "Yes" else 0],
+                    'Heart Rate (bpm)': [heart_rate],
+                    'Screen Time Before Bed (hrs)': [screen_time],
+                    'Sleep Disorder History': [1 if history == "Yes" else 0],
+                    'BMI': [bmi],
+                    'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
+                    'Sleep Environment Score (1–10)': [env_score],
+                    'Daily Water Intake (litres)': [water]
+                })
 
-            # Scale & Predict
-            scaled_input = scaler.transform(input_data)
-            prediction = model.predict(scaled_input)[0]
+                # Scale only numeric features
+                numeric_cols = ['Age', 'Sleep Duration (hrs)', 'Physical Activity (mins/day)',
+                                'Stress Level (1–10)', 'Caffeine Intake (cups/day)',
+                                'Alcohol Intake (units/day)', 'Heart Rate (bpm)',
+                                'Screen Time Before Bed (hrs)', 'BMI', 'Sleep Environment Score (1–10)',
+                                'Daily Water Intake (litres)']
+                input_data[numeric_cols] = scaler.transform(input_data[numeric_cols])
 
-            # ✅ Two-class mapping only
-            label_map = {0: 'Poor', 1: 'Fair'}
-            result = label_map.get(int(prediction), "Unknown")
+                # Predict
+                with st.spinner("Predicting your sleep quality..."):
+                    prediction = model.predict(input_data)[0]
+                    prediction_prob = model.predict_proba(input_data)[0]
 
-            st.success(f"🌙 **Predicted Sleep Quality:** {result}")
-        except Exception as e:
-            st.error(f"⚠️ Prediction error: {e}")
+                label_map = {0: 'Poor', 1: 'Fair'}
+                result = label_map.get(int(prediction), "Unknown")
+
+                st.success(f"🌙 **Predicted Sleep Quality:** {result}")
+                st.info(f"Prediction Confidence: Poor {prediction_prob[0]*100:.1f}% | Fair {prediction_prob[1]*100:.1f}%")
+
+            except Exception as e:
+                st.error(f"⚠️ Prediction error: {e}")
     else:
         st.error("⚠️ Prediction unavailable. Model or scaler missing.")
 
 # ==============================
-# Chatbot Section (Bottom)
+# Chatbot Section
 # ==============================
 st.markdown("---")
 st.subheader("💬 Sleep AI Chatbot")
@@ -163,38 +168,32 @@ with col2:
 if clear:
     st.session_state.chat_history = []
 
-if send:
+if send and user_input.strip():
     if not api_key:
         st.warning("⚠️ Chatbot disabled: Gemini API key not set.")
     else:
-        if user_input.strip():
-            history = [
-                {"role": "user" if role == "You" else "model", "parts": [msg]}
-                for role, msg in st.session_state.chat_history
-            ]
-            try:
-                # primary model
-                time.sleep(1.0)
-                chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-                chat = chat_model.start_chat(history=history)
-                response = chat.send_message(user_input)
-            except Exception as e:
-                # fallback
-                if "429" in str(e):
-                    try:
-                        chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                        chat = chat_model.start_chat(history=history)
-                        response = chat.send_message(user_input)
-                    except Exception:
-                        response = None
-                        st.session_state.chat_history.append(("Bot", "⚠️ Models are out of quota. Try again later."))
-                else:
+        history = [{"role": "user" if role=="You" else "model", "parts":[msg]} 
+                   for role, msg in st.session_state.chat_history]
+        try:
+            chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
+            chat = chat_model.start_chat(history=history)
+            response = chat.send_message(user_input)
+        except Exception as e:
+            if "429" in str(e):
+                try:
+                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                    chat = chat_model.start_chat(history=history)
+                    response = chat.send_message(user_input)
+                except Exception:
                     response = None
-                    st.session_state.chat_history.append(("Bot", f"⚠️ Chatbot error: {e}"))
+                    st.session_state.chat_history.append(("Bot", "⚠️ Models are out of quota. Try again later."))
+            else:
+                response = None
+                st.session_state.chat_history.append(("Bot", f"⚠️ Chatbot error: {e}"))
 
-            if response:
-                st.session_state.chat_history.append(("You", user_input))
-                st.session_state.chat_history.append(("Bot", response.text))
+        if response:
+            st.session_state.chat_history.append(("You", user_input))
+            st.session_state.chat_history.append(("Bot", response.text))
 
 # Display chat history
 for role, msg in st.session_state.chat_history:
