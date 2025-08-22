@@ -7,7 +7,7 @@ import numpy as np
 import google.generativeai as genai
 
 # ==============================
-# Streamlit Config (call first)
+# Streamlit Config
 # ==============================
 st.set_page_config(page_title="AI-Based Sleep Quality Prediction", layout="wide")
 
@@ -47,7 +47,7 @@ except Exception as e:
     st.error(f"❌ Error loading model/scaler: {e}")
 
 # ==============================
-# Sidebar (About this app from PPT)
+# Sidebar (About this app)
 # ==============================
 with st.sidebar:
     st.title("😴 Sleep Quality Predictor")
@@ -56,7 +56,7 @@ with st.sidebar:
 
 - Uses **AI/ML (XGBoost, Random Forest, SVM, etc.)** to predict sleep quality  
 - Considers factors like **age, stress, BMI, screen time, activity, caffeine, alcohol,** and more  
-- Provides prediction: **Good / Fair / Poor**  
+- Provides prediction: **Fair / Poor**  
 - Built with **Streamlit** for easy public access  
 - Helps users take **early action** to improve sleep health  
 - Includes an optional **AI Chatbot** for lifestyle tips  
@@ -132,7 +132,9 @@ if submitted:
             # Scale & Predict
             scaled_input = scaler.transform(input_data)
             prediction = model.predict(scaled_input)[0]
-            label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
+
+            # ✅ Two-class mapping only
+            label_map = {0: 'Poor', 1: 'Fair'}
             result = label_map.get(int(prediction), "Unknown")
 
             st.success(f"🌙 **Predicted Sleep Quality:** {result}")
@@ -166,19 +168,18 @@ if send:
         st.warning("⚠️ Chatbot disabled: Gemini API key not set.")
     else:
         if user_input.strip():
-            # Build history for Gemini
             history = [
                 {"role": "user" if role == "You" else "model", "parts": [msg]}
                 for role, msg in st.session_state.chat_history
             ]
             try:
                 # primary model
-                time.sleep(1.0)  # mild pacing
+                time.sleep(1.0)
                 chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
                 chat = chat_model.start_chat(history=history)
                 response = chat.send_message(user_input)
             except Exception as e:
-                # fallback on quota/other issues
+                # fallback
                 if "429" in str(e):
                     try:
                         chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
