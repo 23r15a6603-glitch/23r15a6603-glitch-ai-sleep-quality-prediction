@@ -49,11 +49,14 @@ except Exception as e:
 with st.sidebar:
     st.title("😴 Sleep Quality Predictor")
     st.markdown("""
-Predict **sleep quality** (Fair / Poor) using **AI/ML**.  
-Factors: age, stress, BMI, screen time, activity, caffeine, alcohol, etc.  
-Optional **AI Chatbot** provides lifestyle tips.  
+**About this app:**
+
+- Predicts your **sleep quality** (Fair / Poor) using **AI & Machine Learning**.  
+- Considers your **age, stress, activity, sleep habits, BMI, caffeine, alcohol,** and more.  
+- Provides **personalized tips** via the built-in **AI Chatbot** to help improve sleep.  
+- Built with **Streamlit** for a simple, interactive, and user-friendly experience.  
 """)
-    st.info("👉 Fill the form on the right for your prediction.")
+    st.info("👉 Fill the form on the right to get your prediction.")
 
 # ==============================
 # Main Title
@@ -101,7 +104,6 @@ with st.form("sleep_form"):
 # ==============================
 if submitted:
     if model is not None and scaler is not None:
-        # Input validation
         if age <= 0 or bmi <= 0 or sleep_duration <= 0:
             st.warning("⚠️ Please enter valid positive values for Age, BMI, and Sleep Duration.")
         else:
@@ -124,7 +126,6 @@ if submitted:
                     'Daily Water Intake (litres)': [water]
                 })
 
-                # Scale only numeric features
                 numeric_cols = ['Age', 'Sleep Duration (hrs)', 'Physical Activity (mins/day)',
                                 'Stress Level (1–10)', 'Caffeine Intake (cups/day)',
                                 'Alcohol Intake (units/day)', 'Heart Rate (bpm)',
@@ -132,7 +133,6 @@ if submitted:
                                 'Daily Water Intake (litres)']
                 input_data[numeric_cols] = scaler.transform(input_data[numeric_cols])
 
-                # Predict
                 with st.spinner("Predicting your sleep quality..."):
                     prediction = model.predict(input_data)[0]
                     prediction_prob = model.predict_proba(input_data)[0]
