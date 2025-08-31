@@ -2,7 +2,6 @@ import os
 import time
 import joblib
 import pandas as pd
-import numpy as np
 import streamlit as st
 import google.generativeai as genai
 
@@ -43,72 +42,91 @@ except FileNotFoundError:
 st.set_page_config(page_title="Sleep Quality Predictor", layout="wide")
 
 # ------------------------------
-# 🎨 Custom CSS (Hotstar-like design)
+# 🎨 Custom CSS (Pro Hotstar-style)
 # ------------------------------
 def load_custom_css():
     st.markdown("""
         <style>
-        /* Global */
+        /* Reset */
         body, .stApp {
+            margin: 0;
+            padding: 0;
             font-family: 'Segoe UI', Tahoma, sans-serif;
-            background-color: var(--background-color);
-            color: var(--text-color);
         }
-        /* Light & Dark Variables */
-        :root {
-            --background-color: #ffffff;
-            --text-color: #000000;
-            --card-bg: #f9f9f9;
+
+        /* Hero Section */
+        .hero {
+            text-align: center;
+            padding: 60px 20px;
+            background: linear-gradient(120deg, #6C3483, #1ABC9C);
+            border-radius: 0 0 30px 30px;
+            margin-bottom: 40px;
+            color: white;
         }
-        [data-theme="dark"] {
-            --background-color: #121212;
-            --text-color: #eaeaea;
-            --card-bg: #1e1e1e;
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 800;
+            margin-bottom: 10px;
         }
+        .hero p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
         /* Cards */
         .custom-card {
-            background-color: var(--card-bg);
-            border-radius: 15px;
+            background: var(--card-bg);
+            border-radius: 20px;
             padding: 25px;
-            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
-            margin-bottom: 25px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
         }
-        /* Hero Title */
-        .hero-title {
-            text-align: center;
-            font-size: 2.8rem;
-            font-weight: bold;
-            background: linear-gradient(90deg, #6C3483, #1ABC9C);
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin-bottom: 20px;
+        .custom-card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.25);
         }
-        /* Result Card */
+
+        /* Result */
         .result-card {
             background: linear-gradient(135deg, #6C3483, #1ABC9C);
             color: white;
-            padding: 25px;
-            border-radius: 15px;
+            padding: 30px;
+            border-radius: 18px;
             text-align: center;
-            font-size: 22px;
+            font-size: 24px;
             font-weight: bold;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+            animation: fadeIn 0.8s ease-in-out;
         }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         /* Buttons */
         button[kind="primary"] {
             border-radius: 12px !important;
             font-weight: bold !important;
             background: linear-gradient(90deg,#6C3483,#1ABC9C) !important;
             color: white !important;
+            border: none !important;
         }
+
         /* Chatbox */
-        .chat-box {
+        .chat-container {
+            border-radius: 15px;
+            background: var(--card-bg);
+            padding: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15);
             max-height: 350px;
             overflow-y: auto;
-            padding: 15px;
-            border-radius: 12px;
-            background: var(--card-bg);
-            box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        /* Light / Dark Mode */
+        :root {
+            --card-bg: #ffffff;
+        }
+        [data-theme="dark"] {
+            --card-bg: #1e1e1e;
         }
         </style>
     """, unsafe_allow_html=True)
@@ -116,31 +134,21 @@ def load_custom_css():
 load_custom_css()
 
 # ------------------------------
-# Sidebar
+# Hero Section
 # ------------------------------
-with st.sidebar:
-    st.title("😴 Sleep Quality Predictor")
-    st.markdown("""
-    **About this app**  
-    - Predicts your sleep quality (Good, Fair, Poor)  
-    - Uses health and lifestyle factors  
-    - AI chatbot for sleep-related queries  
-    """)
-    st.markdown("---")
-    st.info("Fill out the form on the right 👉")
-
-# ------------------------------
-# Main Title
-# ------------------------------
-st.markdown("<h1 class='hero-title'>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
-st.markdown("---")
+st.markdown("""
+<div class="hero">
+    <h1>🌙 AI Sleep Quality Predictor</h1>
+    <p>Understand your sleep health and get AI-driven insights</p>
+</div>
+""", unsafe_allow_html=True)
 
 # ------------------------------
 # Predictor Section
 # ------------------------------
 with st.form("sleep_form"):
     st.markdown("<div class='custom-card'>", unsafe_allow_html=True)
-    st.subheader("📝 Enter Your Health and Lifestyle Factors")
+    st.subheader("📝 Your Health & Lifestyle Factors")
 
     col1, col2, col3 = st.columns(3)
 
@@ -207,8 +215,8 @@ if submitted:
 # ------------------------------
 # Chatbot Section
 # ------------------------------
-st.markdown("---")
-st.subheader("💬 Sleep AI Chatbot")
+st.markdown("## 💬 AI Sleep Chat Assistant")
+st.markdown("<div class='custom-card chat-container'>", unsafe_allow_html=True)
 
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
@@ -225,7 +233,7 @@ if send and api_key:
     if user_input.strip():
         try:
             time.sleep(1.5)
-            history = [{"role": "user" if role == "You" else "model", "parts": [msg]} 
+            history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
                        for role, msg in st.session_state.chat_history]
 
             chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
@@ -233,7 +241,7 @@ if send and api_key:
             response = chat.send_message(user_input)
 
         except Exception as e:
-            if "429" in str(e):  
+            if "429" in str(e):
                 try:
                     chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
                     chat = chat_model.start_chat(history=history)
@@ -253,10 +261,10 @@ if clear:
     st.session_state.chat_history = []
 
 # Display chat history
-st.markdown("<div class='custom-card chat-box'>", unsafe_allow_html=True)
 for role, msg in st.session_state.chat_history:
     if role == "You":
         st.info(f"🧑 {msg}")
     else:
         st.success(f"🤖 {msg}")
+
 st.markdown("</div>", unsafe_allow_html=True)
