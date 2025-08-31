@@ -16,54 +16,53 @@ st.set_page_config(
 )
 
 # ------------------------------
-# Global styles (inspired by premium product landing pages)
+# Global styles (Dark Mode Fix)
 # ------------------------------
 STYLES = """
 <style>
 :root {
-  --brand:#6C63FF; /* violet/indigo accent */
-  --text:#111827;
-  --muted:#6B7280;
-  --bg:#0B1020; /* deep blue hero */
-  --card:#FFFFFF;
+  --brand:#6C63FF;
+  --text:#F3F4F6;
+  --muted:#9CA3AF;
+  --bg:#0B1020;
+  --card:#1F2937;
 }
 
-/***** HERO *****/
+body {
+  background: var(--bg);
+  color: var(--text);
+}
+
 .hero {
-  background: radial-gradient(1150px 650px at 20% 20%, rgba(108,99,255,.20), rgba(108,99,255,.05) 40%, transparent 60%),
-              linear-gradient(180deg, #0B1020 0%, #0B1020 50%, #0F162E 100%);
-  color: #F3F4F6;
+  background: linear-gradient(180deg, #0B1020 0%, #111827 100%);
+  color: var(--text);
   border-radius: 28px;
   padding: 48px 40px;
   margin-bottom: 18px;
 }
-.hero h1 { font-size: 44px; line-height: 1.1; margin: 0 0 12px 0; }
-.hero p { color: #CBD5E1; font-size: 18px; margin: 0 0 20px 0; }
+.hero h1 { font-size: 44px; line-height: 1.1; margin: 0 0 12px 0; color: var(--text); }
+.hero p { color: var(--muted); font-size: 18px; margin: 0 0 20px 0; }
 .cta-btn { background: var(--brand); color: white; padding: 12px 18px; border-radius: 999px; font-weight: 600; text-decoration:none; }
 .subtle-btn { background: rgba(255,255,255,.08); color: #E5E7EB; padding: 12px 18px; border-radius: 999px; text-decoration:none; }
 .kpis { display:flex; gap: 24px; flex-wrap: wrap; margin-top: 18px; }
-.kpi { background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.10); border-radius: 20px; padding: 14px 18px; min-width: 170px; }
+.kpi { background: rgba(255,255,255,.05); border: 1px solid #374151; border-radius: 20px; padding: 14px 18px; min-width: 170px; color: var(--text); }
 .kpi b { font-size: 22px; }
 
-/***** SECTION *****/
-.section h2 { font-size: 28px; margin: 2px 0 12px; }
+.section h2 { font-size: 28px; margin: 2px 0 12px; color: var(--text); }
 .section p.lead { color: var(--muted); margin: 0 0 12px; }
 
-/***** CARDS *****/
 .grid { display: grid; grid-template-columns: repeat(12, 1fr); gap: 16px; }
-.card { grid-column: span 4; background: var(--card); border: 1px solid #E5E7EB; border-radius: 20px; padding: 18px; }
-.card h3 { margin: 6px 0 6px; }
-.badge { display:inline-block; background:#EEF2FF; color:#3730A3; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
-.rule { height:1px; background: #EEF2FF; margin: 12px 0; }
+.card { grid-column: span 4; background: var(--card); color: var(--text); border: 1px solid #374151; border-radius: 20px; padding: 18px; }
+.card h3 { margin: 6px 0 6px; color: var(--text); }
 
-/***** RESULT *****/
-.result { border: 2px solid #E5E7EB; border-radius: 22px; padding: 18px; background: #FBFBFF; }
-.result.good { border-color:#10B98133; background:#ECFDF5; }
-.result.fair { border-color:#FBBF2433; background:#FFFBEB; }
-.result.poor { border-color:#EF444433; background:#FEF2F2; }
+.badge { display:inline-block; background:#3730A3; color:#E0E7FF; padding:4px 10px; border-radius:999px; font-size:12px; font-weight:600; }
+.rule { height:1px; background: #374151; margin: 12px 0; }
 
-/***** FOOTER *****/
-.footer { color:#6B7280; text-align:center; margin-top: 36px; }
+.result { border: 2px solid #374151; border-radius: 22px; padding: 18px; background: #1F2937; color: var(--text); }
+.result.fair { border-color:#FBBF24; background:#92400E33; }
+.result.poor { border-color:#EF4444; background:#7F1D1D33; }
+
+.footer { color:#9CA3AF; text-align:center; margin-top: 36px; }
 </style>
 """
 
@@ -124,7 +123,7 @@ with st.container():
               <div class="card" style="text-align:center;">
                 <h3 style="margin:6px 0">Tonight's tip</h3>
                 <div class="rule"></div>
-                <p style="color:#6B7280; margin:0">Keep screens out of bed and aim for a consistent wake‑up time ±30 min.</p>
+                <p style="color:var(--muted); margin:0">Keep screens out of bed and aim for a consistent wake‑up time ±30 min.</p>
               </div>
             </div>
           </div>
@@ -139,10 +138,9 @@ with st.container():
 overview_tab, predict_tab, coach_tab = st.tabs(["Overview", "Predict", "Coach"])
 
 # ------------------------------
-# OVERVIEW TAB (feature cards + how it works + FAQ)
+# OVERVIEW TAB
 # ------------------------------
 with overview_tab:
-    st.markdown("<div class='section'>", unsafe_allow_html=True)
     st.subheader("Why choose AI Sleep Analyzer")
     st.caption("Designed like a premium health device page: clean, informative, and conversion‑friendly.")
 
@@ -157,7 +155,7 @@ with overview_tab:
         <div class="card">
           <span class="badge">Fast</span>
           <h3>Instant predictions</h3>
-          <p>Our on‑device model scores your sleep quality as Good, Fair, or Poor in seconds.</p>
+          <p>Our on‑device model scores your sleep quality as Fair or Poor in seconds.</p>
         </div>
         <div class="card">
           <span class="badge">Private</span>
@@ -169,21 +167,8 @@ with overview_tab:
     )
     st.markdown("</div>", unsafe_allow_html=True)
 
-    colA, colB = st.columns([1,1])
-    with colA:
-        st.markdown("### How it works")
-        st.write("1. Enter your daily habits and health markers.\n2. Our model evaluates risk factors that impact sleep.\n3. Get a clear score with practical next steps.")
-    with colB:
-        st.markdown("### What affects your score")
-        st.write("Duration, stress, activity, screen time, caffeine, alcohol, BMI, heart rate, hydration, environment, and more.")
-
-    with st.expander("Frequently asked questions"):
-        st.markdown("**Is this a medical device?** No. It's an educational tool to help spot patterns.\n\n**Do I need a wearable?** Not required.\n\n**Will my data be saved?** Not unless you choose to export it.")
-
-    st.markdown("</div>", unsafe_allow_html=True)
-
 # ------------------------------
-# PREDICT TAB (full re‑designed form + result panel)
+# PREDICT TAB
 # ------------------------------
 with predict_tab:
     st.markdown("<a name='predict'></a>", unsafe_allow_html=True)
@@ -244,10 +229,9 @@ with predict_tab:
 
             scaled = scaler.transform(input_df)
             pred = int(model.predict(scaled)[0])
-            label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
+            label_map = {0: 'Poor', 1: 'Fair'}
             result = label_map.get(pred, "Unknown")
 
-            # Personalized guidance
             tips = []
             if sleep_duration < 7: tips.append("Aim for 7–9 hours of sleep.")
             if stress >= 7: tips.append("Add a 5‑minute wind‑down: breathing, journaling, or light stretching.")
@@ -259,7 +243,7 @@ with predict_tab:
             if water < 1.5: tips.append("Hydrate earlier in the day to avoid nocturnal awakenings.")
             if env_score < 6: tips.append("Dark, cool (18–20°C), and quiet rooms improve sleep quality.")
 
-            tone_cls = "good" if result == "Good" else ("fair" if result == "Fair" else "poor")
+            tone_cls = "fair" if result == "Fair" else "poor"
             st.markdown(f"<div class='result {tone_cls}'>", unsafe_allow_html=True)
             st.markdown(f"### 🌙 Predicted Sleep Quality: **{result}**")
             if tips:
@@ -273,7 +257,7 @@ with predict_tab:
             st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
 # ------------------------------
-# COACH TAB (Gemini chat – concise UI)
+# COACH TAB
 # ------------------------------
 with coach_tab:
     st.markdown("<a name='coach'></a>", unsafe_allow_html=True)
@@ -328,7 +312,7 @@ with coach_tab:
             st.success(f"🤖 {msg}")
 
 # ------------------------------
-# Trust & footer
+# Footer
 # ------------------------------
 st.markdown("""
 <div class='footer'>
