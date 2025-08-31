@@ -98,7 +98,13 @@ except FileNotFoundError:
     st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
 
 # ------------------------------
-# TOP HERO
+# Tab control with session state
+# ------------------------------
+if "active_tab" not in st.session_state:
+    st.session_state.active_tab = "Overview"
+
+# ------------------------------
+# TOP HERO with real buttons
 # ------------------------------
 with st.container():
     st.markdown(
@@ -109,10 +115,20 @@ with st.container():
               <div class="badge">AI Sleep Analyzer</div>
               <h1>Understand your nights. Improve your days.</h1>
               <p>Measure the habits that shape your sleep and get instant, science-inspired guidance. Private. Simple. Actionable.</p>
-              <div style="display:flex; gap:12px; flex-wrap: wrap;">
-                <a class="cta-btn" href="#predict">Predict my sleep quality</a>
-                <a class="subtle-btn" href="#coach">Ask the AI sleep coach</a>
-              </div>
+        """,
+        unsafe_allow_html=True,
+    )
+
+    colA, colB = st.columns([1,1])
+    with colA:
+        if st.button("Predict my sleep quality"):
+            st.session_state.active_tab = "Predict"
+    with colB:
+        if st.button("Ask the AI sleep coach"):
+            st.session_state.active_tab = "Coach"
+
+    st.markdown(
+        """
               <div class="kpis">
                 <div class="kpi"><b>~60s</b><div>to get insights</div></div>
                 <div class="kpi"><b>15+</b><div>lifestyle factors</div></div>
@@ -135,178 +151,172 @@ with st.container():
 # ------------------------------
 # LAYOUT TABS
 # ------------------------------
-overview_tab, predict_tab, coach_tab = st.tabs(["Overview", "Predict", "Coach"])
+tabs = st.tabs(["Overview", "Predict", "Coach"])
+tab_map = {"Overview": 0, "Predict": 1, "Coach": 2}
 
 # ------------------------------
 # OVERVIEW TAB
 # ------------------------------
-with overview_tab:
-    st.subheader("Why choose AI Sleep Analyzer")
-    st.caption("Designed like a premium health device page: clean, informative, and conversion‑friendly.")
+with tabs[tab_map[st.session_state.active_tab]]:
+    if st.session_state.active_tab == "Overview":
+        st.subheader("Why choose AI Sleep Analyzer")
+        st.caption("Designed like a premium health device page: clean, informative, and conversion‑friendly.")
 
-    st.markdown("<div class='grid'>", unsafe_allow_html=True)
-    st.markdown(
-        """
-        <div class="card">
-          <span class="badge">Personalized</span>
-          <h3>Tailored insights</h3>
-          <p>Get guidance based on your age, activity, stress, caffeine, and more.</p>
-        </div>
-        <div class="card">
-          <span class="badge">Fast</span>
-          <h3>Instant predictions</h3>
-          <p>Our on‑device model scores your sleep quality as Fair or Poor in seconds.</p>
-        </div>
-        <div class="card">
-          <span class="badge">Private</span>
-          <h3>Your data stays yours</h3>
-          <p>Inputs are processed locally in the app session and not stored by default.</p>
-        </div>
-        """,
-        unsafe_allow_html=True,
-    )
-    st.markdown("</div>", unsafe_allow_html=True)
+        st.markdown("<div class='grid'>", unsafe_allow_html=True)
+        st.markdown(
+            """
+            <div class="card">
+              <span class="badge">Personalized</span>
+              <h3>Tailored insights</h3>
+              <p>Get guidance based on your age, activity, stress, caffeine, and more.</p>
+            </div>
+            <div class="card">
+              <span class="badge">Fast</span>
+              <h3>Instant predictions</h3>
+              <p>Our on‑device model scores your sleep quality as Fair or Poor in seconds.</p>
+            </div>
+            <div class="card">
+              <span class="badge">Private</span>
+              <h3>Your data stays yours</h3>
+              <p>Inputs are processed locally in the app session and not stored by default.</p>
+            </div>
+            """,
+            unsafe_allow_html=True,
+        )
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------
-# PREDICT TAB (No Enter Required)
-# ------------------------------
-with predict_tab:
-    st.markdown("<a name='predict'></a>", unsafe_allow_html=True)
-    st.subheader("Predict your sleep quality")
-    st.caption("Takes ~1 minute • Works offline with the bundled model")
+    elif st.session_state.active_tab == "Predict":
+        st.subheader("Predict your sleep quality")
+        st.caption("Takes ~1 minute • Works offline with the bundled model")
 
-    col1, col2, col3 = st.columns(3)
+        col1, col2, col3 = st.columns(3)
 
-    with col1:
-        age = st.number_input("Age", 10, 100, 25)
-        gender = st.selectbox("Gender", ["Male", "Female"])
-        sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
-        activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
+        with col1:
+            age = st.number_input("Age", 10, 100, 25)
+            gender = st.selectbox("Gender", ["Male", "Female"])
+            sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
+            activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
 
-    with col2:
-        stress = st.slider("Stress Level (1–10)", 1, 10, 5)
-        caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
-        alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
-        smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
+        with col2:
+            stress = st.slider("Stress Level (1–10)", 1, 10, 5)
+            caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
+            alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
+            smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
 
-    with col3:
-        heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
-        screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
-        history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
-        bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
+        with col3:
+            heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
+            screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
+            history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
+            bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
 
-    st.markdown("---")
+        st.markdown("---")
 
-    col4, col5 = st.columns(2)
-    with col4:
-        wake_consistency = st.selectbox("Wake‑up Consistency", ["Consistent", "Inconsistent"])
-    with col5:
-        env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
-        water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
+        col4, col5 = st.columns(2)
+        with col4:
+            wake_consistency = st.selectbox("Wake‑up Consistency", ["Consistent", "Inconsistent"])
+        with col5:
+            env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
+            water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
-    if st.button("🔍 Predict now"):
-        if model is not None and scaler is not None:
-            input_df = pd.DataFrame({
-                'Age': [age],
-                'Gender': [1 if gender == "Male" else 0],
-                'Sleep Duration (hrs)': [sleep_duration],
-                'Physical Activity (mins/day)': [activity],
-                'Stress Level (1–10)': [stress],
-                'Caffeine Intake (cups/day)': [caffeine],
-                'Alcohol Intake (units/day)': [alcohol],
-                'Smoking': [1 if smoker == "Yes" else 0],
-                'Heart Rate (bpm)': [heart_rate],
-                'Screen Time Before Bed (hrs)': [screen_time],
-                'Sleep Disorder History': [1 if history == "Yes" else 0],
-                'BMI': [bmi],
-                'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
-                'Sleep Environment Score (1–10)': [env_score],
-                'Daily Water Intake (litres)': [water]
-            })
+        if st.button("🔍 Predict now"):
+            if model is not None and scaler is not None:
+                input_df = pd.DataFrame({
+                    'Age': [age],
+                    'Gender': [1 if gender == "Male" else 0],
+                    'Sleep Duration (hrs)': [sleep_duration],
+                    'Physical Activity (mins/day)': [activity],
+                    'Stress Level (1–10)': [stress],
+                    'Caffeine Intake (cups/day)': [caffeine],
+                    'Alcohol Intake (units/day)': [alcohol],
+                    'Smoking': [1 if smoker == "Yes" else 0],
+                    'Heart Rate (bpm)': [heart_rate],
+                    'Screen Time Before Bed (hrs)': [screen_time],
+                    'Sleep Disorder History': [1 if history == "Yes" else 0],
+                    'BMI': [bmi],
+                    'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
+                    'Sleep Environment Score (1–10)': [env_score],
+                    'Daily Water Intake (litres)': [water]
+                })
 
-            scaled = scaler.transform(input_df)
-            pred = int(model.predict(scaled)[0])
-            label_map = {0: 'Poor', 1: 'Fair'}
-            result = label_map.get(pred, "Unknown")
+                scaled = scaler.transform(input_df)
+                pred = int(model.predict(scaled)[0])
+                label_map = {0: 'Poor', 1: 'Fair'}
+                result = label_map.get(pred, "Unknown")
 
-            tips = []
-            if sleep_duration < 7: tips.append("Aim for 7–9 hours of sleep.")
-            if stress >= 7: tips.append("Add a 5‑minute wind‑down: breathing, journaling, or light stretching.")
-            if screen_time > 1.0: tips.append("Reduce screens ≥60 minutes before bed.")
-            if caffeine >= 3: tips.append("Cut caffeine after mid‑afternoon.")
-            if alcohol >= 2: tips.append("Avoid alcohol within 3–4 hours of bedtime.")
-            if activity < 30: tips.append("Target at least 30 minutes of light activity.")
-            if bmi >= 27: tips.append("Discuss weight, snoring, or apnea risk with a professional if concerned.")
-            if water < 1.5: tips.append("Hydrate earlier in the day to avoid nocturnal awakenings.")
-            if env_score < 6: tips.append("Dark, cool (18–20°C), and quiet rooms improve sleep quality.")
+                tips = []
+                if sleep_duration < 7: tips.append("Aim for 7–9 hours of sleep.")
+                if stress >= 7: tips.append("Add a 5‑minute wind‑down: breathing, journaling, or light stretching.")
+                if screen_time > 1.0: tips.append("Reduce screens ≥60 minutes before bed.")
+                if caffeine >= 3: tips.append("Cut caffeine after mid‑afternoon.")
+                if alcohol >= 2: tips.append("Avoid alcohol within 3–4 hours of bedtime.")
+                if activity < 30: tips.append("Target at least 30 minutes of light activity.")
+                if bmi >= 27: tips.append("Discuss weight, snoring, or apnea risk with a professional if concerned.")
+                if water < 1.5: tips.append("Hydrate earlier in the day to avoid nocturnal awakenings.")
+                if env_score < 6: tips.append("Dark, cool (18–20°C), and quiet rooms improve sleep quality.")
 
-            tone_cls = "fair" if result == "Fair" else "poor"
-            st.markdown(f"<div class='result {tone_cls}'>", unsafe_allow_html=True)
-            st.markdown(f"### 🌙 Predicted Sleep Quality: **{result}**")
-            if tips:
-                st.markdown("**Next best actions:**")
-                for t in tips[:6]:
-                    st.write("• ", t)
-            else:
-                st.caption("You're doing great. Keep routines consistent and revisit after a week of tracking.")
-            st.markdown("</div>", unsafe_allow_html=True)
-        else:
-            st.error("⚠ Prediction unavailable. Model or scaler missing.")
-
-# ------------------------------
-# COACH TAB
-# ------------------------------
-with coach_tab:
-    st.markdown("<a name='coach'></a>", unsafe_allow_html=True)
-    st.subheader("AI Sleep Coach")
-    st.caption("Ask about habits, routines, or how to improve tonight.")
-
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-    user_input = st.text_input("Ask a question…", key="chat_input")
-    col1, col2 = st.columns([1,1])
-    with col1:
-        send = st.button("Send")
-    with col2:
-        clear = st.button("Clear Chat")
-
-    if clear:
-        st.session_state.chat_history = []
-
-    if send and api_key:
-        if user_input.strip():
-            try:
-                time.sleep(1.2)
-                history = [
-                    {"role": "user" if role == "You" else "model", "parts": [msg]}
-                    for role, msg in st.session_state.chat_history
-                ]
-                chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-                chat = chat_model.start_chat(history=history)
-                response = chat.send_message(user_input)
-            except Exception as e:
-                if "429" in str(e):
-                    try:
-                        chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                        chat = chat_model.start_chat(history=history)
-                        response = chat.send_message(user_input)
-                    except Exception:
-                        st.session_state.chat_history.append(("Bot", "⚠ Models are out of quota. Try again later."))
-                        response = None
+                tone_cls = "fair" if result == "Fair" else "poor"
+                st.markdown(f"<div class='result {tone_cls}'>", unsafe_allow_html=True)
+                st.markdown(f"### 🌙 Predicted Sleep Quality: **{result}**")
+                if tips:
+                    st.markdown("**Next best actions:**")
+                    for t in tips[:6]:
+                        st.write("• ", t)
                 else:
-                    st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
-                    response = None
+                    st.caption("You're doing great. Keep routines consistent and revisit after a week of tracking.")
+                st.markdown("</div>", unsafe_allow_html=True)
+            else:
+                st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
-            if response:
-                st.session_state.chat_history.append(("You", user_input))
-                st.session_state.chat_history.append(("Bot", response.text))
+    elif st.session_state.active_tab == "Coach":
+        st.subheader("AI Sleep Coach")
+        st.caption("Ask about habits, routines, or how to improve tonight.")
 
-    for role, msg in st.session_state.chat_history:
-        if role == "You":
-            st.info(f"🧑 {msg}")
-        else:
-            st.success(f"🤖 {msg}")
+        if "chat_history" not in st.session_state:
+            st.session_state.chat_history = []
+
+        user_input = st.text_input("Ask a question…", key="chat_input")
+        col1, col2 = st.columns([1,1])
+        with col1:
+            send = st.button("Send")
+        with col2:
+            clear = st.button("Clear Chat")
+
+        if clear:
+            st.session_state.chat_history = []
+
+        if send and api_key:
+            if user_input.strip():
+                try:
+                    time.sleep(1.2)
+                    history = [
+                        {"role": "user" if role == "You" else "model", "parts": [msg]}
+                        for role, msg in st.session_state.chat_history
+                    ]
+                    chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
+                    chat = chat_model.start_chat(history=history)
+                    response = chat.send_message(user_input)
+                except Exception as e:
+                    if "429" in str(e):
+                        try:
+                            chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                            chat = chat_model.start_chat(history=history)
+                            response = chat.send_message(user_input)
+                        except Exception:
+                            st.session_state.chat_history.append(("Bot", "⚠ Models are out of quota. Try again later."))
+                            response = None
+                    else:
+                        st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
+                        response = None
+
+                if response:
+                    st.session_state.chat_history.append(("You", user_input))
+                    st.session_state.chat_history.append(("Bot", response.text))
+
+        for role, msg in st.session_state.chat_history:
+            if role == "You":
+                st.info(f"🧑 {msg}")
+            else:
+                st.success(f"🤖 {msg}")
 
 # ------------------------------
 # Footer
