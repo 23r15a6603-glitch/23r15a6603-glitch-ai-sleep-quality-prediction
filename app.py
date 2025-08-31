@@ -1,4 +1,4 @@
-
+# app.py
 import os
 import time
 import joblib
@@ -7,10 +7,10 @@ import streamlit as st
 import google.generativeai as genai
 
 # ------------------------------
-# ✅ Secure API Key Handling
+# Config + secure key
 # ------------------------------
+st.set_page_config(page_title="SleepPro • Predictor", page_icon="🌙", layout="wide")
 api_key = st.secrets.get("GEMINI_API_KEY")
-
 if not api_key:
     try:
         from dotenv import load_dotenv
@@ -23,50 +23,50 @@ if api_key:
     try:
         genai.configure(api_key=api_key)
     except Exception:
+        # If generative API fails to configure, we still let the predictor run.
         pass
-else:
-    st.warning("⚠ Gemini API Key not found. Please set GEMINI_API_KEY in .env or Streamlit Secrets.")
 
 # ------------------------------
-# ✅ Load ML model and scaler safely
+# Load model + scaler (safe)
 # ------------------------------
 MODEL_PATH = "xgb_sleep_quality_model.pkl"
 SCALER_PATH = "scaler_sleep_quality.pkl"
-
 model, scaler = None, None
-try:
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
+if os.path.exists(MODEL_PATH) and os.path.exists(SCALER_PATH):
+    try:
+        model = joblib.load(MODEL_PATH)
+        scaler = joblib.load(SCALER_PATH)
+    except Exception as e:
+        st.error(f"Failed to load model/scaler: {e}")
+else:
+    # Only show this if running in interactive mode; don't block UI on cloud
+    st.warning("Model or scaler missing. Place xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl in the app folder.")
 
 # ------------------------------
-# Page Config
+# Theme system (clean, robust)
 # ------------------------------
-st.set_page_config(page_title="Sleep Quality • Pro", page_icon="🌙", layout="wide")
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+if "chat_open" not in st.session_state:
+    st.session_state.chat_open = False
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# ------------------------------
-# Theme System (Light/Dark toggle)
-# ------------------------------
-if "theme_dark" not in st.session_state:
-    st.session_state.theme_dark = False  # default Light
-
-def _inject_theme(dark: bool):
-    # Professional palette — tuned for contrast in both modes
+def apply_theme(dark: bool):
+    """Sets CSS variables for light/dark. Minimal, robust, non-invasive styling."""
     if dark:
         css = """
         <style>
         :root{
-            --bg:#0b0f1a;
-            --bg-soft:#121826;
-            --text:#e6eaf2;
-            --muted:#9aa3b2;
-            --card:#0f1523;
-            --border:#1f2a44;
-            --accent:#1ABC9C;
-            --accent-2:#6C3483;
-            --shadow:0 12px 28px rgba(0,0,0,.55);
-            --shadow-soft:0 8px 20px rgba(0,0,0,.35);
+            --bg: #0b0f1a;
+            --panel: #0f1724;
+            --muted: #9aa3b2;
+            --text: #e6eef6;
+            --accent1: #6C3483;
+            --accent2: #1abc9c;
+            --card: #0f1724;
+            --border: rgba(255,255,255,0.04);
+            --shadow: 0 12px 28px rgba(2,6,23,0.65);
         }
         </style>
         """
@@ -74,391 +74,334 @@ def _inject_theme(dark: bool):
         css = """
         <style>
         :root{
-            --bg:#ffffff;
-            --bg-soft:#f6f7fb;
-            --text:#0b0f1a;
-            --muted:#5a6473;
-            --card:#ffffff;
-            --border:#e6e9f2;
-            --accent:#6C3483;
-            --accent-2:#1ABC9C;
-            --shadow:0 10px 26px rgba(17,17,17,.07);
-            --shadow-soft:0 6px 16px rgba(17,17,17,.06);
+            --bg: #ffffff;
+            --panel: #f6f8fb;
+            --muted: #5a6473;
+            --text: #0b0f1a;
+            --accent1: #6C3483;
+            --accent2: #1abc9c;
+            --card: #ffffff;
+            --border: rgba(11,15,26,0.06);
+            --shadow: 0 8px 20px rgba(17,17,17,0.06);
         }
         </style>
         """
     st.markdown(css, unsafe_allow_html=True)
 
-_inject_theme = _inject_theme  # alias
-_inject_theme(st.session_state.theme_dark)
+apply_theme(st.session_state.dark_mode)
 
 # ------------------------------
-# Global Styles (Hotstar-like: sticky nav, hero, carousels, cards)
+# Minimal, stable CSS for layout + chat bubble
 # ------------------------------
 st.markdown("""
 <style>
-/* App background & text */
-[data-testid="stAppViewContainer"]{
-    background: var(--bg);
-    color: var(--text);
-}
-[data-testid="stHeader"]{ background: transparent; }
+/* Base */
+[data-testid="stAppViewContainer"] { background: var(--bg); color: var(--text); }
+[data-testid="stSidebar"] { background: var(--panel); }
 
-/* Sticky Navigation */
-.navbar{
-    position: sticky; top: 0; z-index: 1000;
-    background: linear-gradient(90deg, var(--card), var(--bg-soft));
-    border-bottom: 1px solid var(--border);
-    box-shadow: var(--shadow-soft);
-    border-radius: 0 0 18px 18px;
-    padding: 12px 16px;
+/* Top nav */
+.top-nav {
+  display:flex; align-items:center; justify-content:space-between;
+  gap: 12px;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+  background: transparent;
 }
-.navbrand{
-    display:flex; align-items:center; gap:10px; font-weight:800; letter-spacing:.2px;
-    font-size: 1.15rem;
+.brand {
+  display:flex; gap:10px; align-items:center; font-weight:800; font-size:1.05rem;
 }
-.navlinks{
-    display:flex; gap:18px; align-items:center; justify-content:center; flex-wrap:wrap;
-}
-.navlinks a{
-    text-decoration:none; color:var(--muted); font-weight:600; padding:8px 10px;
-    border-radius:10px;
-}
-.navlinks a:hover{ color:var(--text); background:var(--bg-soft); }
-.theme-toggle{
-    display:flex; align-items:center; justify-content:flex-end;
-}
+.controls { display:flex; gap:8px; align-items:center; }
 
 /* Hero */
-.hero{
-    border-radius: 28px;
-    padding: 56px 28px;
-    background: radial-gradient(100% 120% at 0% 0%, var(--accent) 0%, transparent 55%),
-                radial-gradient(100% 120% at 100% 0%, var(--accent-2) 0%, transparent 55%),
-                linear-gradient(135deg, var(--bg-soft), var(--card));
-    box-shadow: var(--shadow);
-    border: 1px solid var(--border);
+.hero {
+  padding: 36px 26px;
+  border-radius: 14px;
+  background: linear-gradient(120deg, rgba(108,52,131,0.12), rgba(26,188,156,0.08));
+  margin-bottom: 18px;
 }
-.hero h1{
-    font-size: 2.6rem; line-height: 1.15; margin: 0 0 8px 0;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-    font-weight: 900;
-}
-.hero p{ color: var(--muted); font-size: 1.05rem; margin: 0; }
+.hero h1 { margin:0; font-size:2.2rem; font-weight:800; }
+.hero p { margin:6px 0 0 0; color:var(--muted); }
 
-.cta-btn button{
-    border-radius: 12px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2))!important;
-    color: #fff!important; font-weight: 800!important;
-    border: none!important;
+/* Centered main card */
+.main-card {
+  background: var(--card);
+  border: 1px solid var(--border);
+  padding: 22px;
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  max-width: 920px;
+  margin: 0 auto 18px auto;
 }
 
-/* Section headings */
-.section-title{
-    font-weight: 800; font-size: 1.3rem; margin: 8px 0 14px 0;
+/* Result */
+.result {
+  margin-top: 14px;
+  padding: 14px;
+  border-radius: 10px;
+  text-align:center;
+  font-weight:800;
+  color: white;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  box-shadow: 0 6px 18px rgba(0,0,0,0.12);
 }
 
-/* Carousel (horizontal row like Hotstar) */
-.row{
-    display: flex; gap: 16px; overflow-x: auto; padding: 6px 2px 4px 2px;
-    scroll-snap-type: x mandatory;
+/* Small tiles row */
+.tiles-row {
+  display:flex; gap:14px; overflow-x:auto; padding-bottom:8px;
 }
-.row::-webkit-scrollbar{ height: 8px; }
-.row::-webkit-scrollbar-thumb{
-    background: var(--border); border-radius: 999px;
+.tile {
+  min-width:220px; max-width:260px;
+  background: var(--card); border:1px solid var(--border);
+  border-radius:12px; padding:12px;
+  box-shadow: var(--shadow);
 }
-.tile{
-    min-width: 220px; max-width: 240px; scroll-snap-align: start;
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 18px; box-shadow: var(--shadow-soft);
-    padding: 14px;
-    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
-}
-.tile:hover{
-    transform: translateY(-4px);
-    box-shadow: var(--shadow);
-    border-color: transparent;
-}
-.tile .t-eyebrow{ font-size:.8rem; color: var(--muted); margin-bottom: 4px; }
-.tile .t-title{ font-weight: 800; }
-.tile .t-foot{ font-size:.8rem; color: var(--muted); margin-top: 6px; }
+.tile h4 { margin:0 0 6px 0; font-size:1.05rem; font-weight:700; }
+.tile p { margin:0; color:var(--muted); font-size:0.95rem; }
 
-/* Card shell for forms and chat */
-.card{
-    background: var(--card); border: 1px solid var(--border);
-    border-radius: 20px; padding: 22px; box-shadow: var(--shadow-soft);
+/* Floating chat bubble & window */
+.chat-bubble {
+  position: fixed;
+  right: 22px;
+  bottom: 22px;
+  z-index: 9999;
 }
+.chat-button {
+  width: 64px; height:64px; border-radius:50%;
+  border: none; outline: none;
+  background: linear-gradient(90deg, var(--accent1), var(--accent2));
+  color: white; font-weight:800;
+  box-shadow: 0 8px 22px rgba(0,0,0,0.2);
+  cursor: pointer;
+}
+.chat-window {
+  position: fixed;
+  right: 22px;
+  bottom: 100px;
+  width: 360px;
+  max-height: 520px;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 20px 50px rgba(2,6,23,0.45);
+  z-index: 9999;
+  display: flex; flex-direction: column;
+  overflow: hidden;
+}
+.chat-header {
+  display:flex; justify-content:space-between; align-items:center;
+  padding: 12px; border-bottom: 1px solid var(--border);
+}
+.chat-messages {
+  padding: 12px; overflow-y:auto; flex:1; background: transparent;
+}
+.msg-user { background: linear-gradient(90deg, rgba(108,52,131,0.12), rgba(26,188,156,0.07)); padding:8px 10px; border-radius:10px; margin:8px 0; max-width:85%; align-self:flex-end; }
+.msg-bot { background: var(--panel); padding:8px 10px; border-radius:10px; margin:8px 0; max-width:85%; align-self:flex-start; color:var(--text); }
 
-/* Result banner */
-.result{
-    background: linear-gradient(135deg, var(--accent), var(--accent-2));
-    color:#fff; border-radius: 18px; padding: 22px; text-align:center;
-    font-weight: 900; font-size: 1.2rem;
-    box-shadow: var(--shadow);
-    animation: rise .6s ease both;
-}
-@keyframes rise{
-  from{ opacity:0; transform: translateY(14px) }
-  to{ opacity:1; transform: translateY(0) }
-}
-
-/* Buttons */
-.stButton>button{
-    border-radius:12px; font-weight:800;
-    border:1px solid transparent;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    color:#fff;
-}
-.stButton>button:hover{ filter: brightness(1.05); }
-
-/* Sidebar */
-[data-testid="stSidebar"]{
-    background: var(--bg-soft);
-    border-right: 1px solid var(--border);
-}
-
-/* Inputs */
-.css-1dp5vir, .stSelectbox, .stSlider, .stNumberInput{
-    color: var(--text);
+/* responsive */
+@media (max-width: 720px) {
+  .main-card { margin: 0 14px 18px 14px; width:calc(100% - 28px); }
+  .chat-window { right: 12px; left: 12px; width: auto; bottom: 80px; }
 }
 </style>
 """, unsafe_allow_html=True)
 
 # ------------------------------
-# Navbar
+# Top nav (simple)
 # ------------------------------
-with st.container():
-    c1, c2, c3 = st.columns([1.2, 4, 1.2])
-    with c1:
-        st.markdown(
-            "<div class='navbar'><div class='navbrand'>🌙 SleepPro</div></div>",
-            unsafe_allow_html=True
-        )
-    with c2:
-        st.markdown(
-            "<div class='navbar' style='background:transparent; box-shadow:none; border:none;'>"
-            "<div class='navlinks'>"
-            "<a href='#home'>Home</a>"
-            "<a href='#predictor'>Predictor</a>"
-            "<a href='#insights'>Insights</a>"
-            "<a href='#chatbot'>Chat</a>"
-            "</div></div>",
-            unsafe_allow_html=True
-        )
-    with c3:
-        st.markdown("<div class='navbar theme-toggle'>", unsafe_allow_html=True)
-        dark_now = st.toggle("🌙 Dark mode", value=st.session_state.theme_dark, help="Toggle theme (Hotstar-like)")
-        st.markdown("</div>", unsafe_allow_html=True)
-
-if dark_now != st.session_state.theme_dark:
-    st.session_state.theme_dark = dark_now
-    _inject_theme(st.session_state.theme_dark)
+nav_cols = st.columns([1, 3, 1])
+with nav_cols[0]:
+    st.markdown("<div class='top-nav'><div class='brand'>🌙 SleepPro</div></div>", unsafe_allow_html=True)
+with nav_cols[1]:
+    # empty center to keep nav spaced
+    st.markdown("", unsafe_allow_html=True)
+with nav_cols[2]:
+    # theme toggle in top-right
+    def toggle_theme():
+        st.session_state.dark_mode = not st.session_state.dark_mode
+        apply_theme(st.session_state.dark_mode)
+    st.button("🌙 Dark" if not st.session_state.dark_mode else "☀ Light", on_click=toggle_theme)
 
 # ------------------------------
 # Hero
 # ------------------------------
-st.markdown("<span id='home'></span>", unsafe_allow_html=True)
-with st.container():
-    cta1, cta2 = st.columns([2.8, 1.2])
-    with cta1:
-        st.markdown(
-            "<div class='hero'>"
-            "<h1>AI Sleep Quality — like a pro</h1>"
-            "<p>Hotstar-style UI. Medical-grade features. Instant insights.</p>"
-            "</div>",
-            unsafe_allow_html=True,
-        )
-    with cta2:
-        st.markdown("<div class='hero'>", unsafe_allow_html=True)
-        st.metric("Users", "2,000+")
-        st.metric("Avg. Sleep", "6.9 hrs")
-        st.metric("Models", "XGBoost")
-        st.markdown("</div>", unsafe_allow_html=True)
+st.markdown(
+    "<div class='hero'><h1>Professional Sleep Quality Predictor</h1>"
+    "<p>Clean design — quick predictions — clear insights.</p></div>",
+    unsafe_allow_html=True
+)
 
 # ------------------------------
-# Content rows (Hotstar-like carousels)
+# Main predictor card (centered, focused)
 # ------------------------------
-st.markdown("### Explore Sleep Topics")
-row1 = st.container()
-with row1:
-    st.markdown("<div class='row'>", unsafe_allow_html=True)
-    for t in [
-        ("Sleep Hygiene", "Basics to sleep better", "Start tonight"),
-        ("Deep Sleep Boost", "Habits that help", "Actionable tips"),
-        ("Stress & Sleep", "Manage cortisol levels", "Guided steps"),
-        ("Caffeine Timing", "Cutoff & rhythms", "Daily routine"),
-        ("Screen Detox", "Reduce blue light", "Bedtime ritual"),
-        ("Heart Rate", "Understand your bpm", "Recovery cues"),
-        ("Hydration", "Water & sleep link", "Optimal range"),
-    ]:
-        st.markdown(
-            f"""
-            <div class='tile'>
-              <div class='t-eyebrow'>{t[2]}</div>
-              <div class='t-title'>{t[0]}</div>
-              <div class='t-foot'>{t[1]}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
+st.markdown("<div class='main-card'>", unsafe_allow_html=True)
+st.markdown("## 📝 Tell us about yourself")
 
-# ------------------------------
-# Predictor Section
-# ------------------------------
-st.markdown("<span id='predictor'></span>", unsafe_allow_html=True)
-with st.form("sleep_form"):
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>📝 Your Health & Lifestyle</div>", unsafe_allow_html=True)
+col1, col2, col3 = st.columns(3)
+with col1:
+    age = st.number_input("Age", min_value=10, max_value=100, value=25)
+    gender = st.selectbox("Gender", ["Male", "Female"])
+    sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
+with col2:
+    activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
+    stress = st.slider("Stress Level (1–10)", 1, 10, 5)
+    caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
+with col3:
+    alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
+    smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
+    bmi = st.number_input("BMI", min_value=10.0, max_value=50.0, value=22.0)
 
-    col1, col2, col3 = st.columns(3)
+col4, col5 = st.columns([1,1])
+with col4:
+    heart_rate = st.number_input("Heart Rate (bpm)", min_value=30, max_value=220, value=70)
+with col5:
+    screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
 
-    with col1:
-        age = st.number_input("Age", 10, 100, 25)
-        gender = st.selectbox("Gender", ["Male", "Female"])
-        sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
-        activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
+col6, col7 = st.columns([1,1])
+with col6:
+    history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
+    wake_consistency = st.selectbox("Wake-up Consistency", ["Consistent", "Inconsistent"])
+with col7:
+    env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
+    water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
-    with col2:
-        stress = st.slider("Stress Level (1–10)", 1, 10, 5)
-        caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
-        alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
-        smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
-
-    with col3:
-        heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
-        screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
-        history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
-        bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
-
-    col4, col5 = st.columns(2)
-    with col4:
-        wake_consistency = st.selectbox("Wake-up Consistency", ["Consistent", "Inconsistent"])
-    with col5:
-        env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
-        water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
-
-    submit = st.form_submit_button("🔍 Predict Sleep Quality", use_container_width=True)
-    st.markdown("</div>", unsafe_allow_html=True)
+predict_clicked = st.button("🔍 Predict Sleep Quality")
+st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------
-# Prediction
+# Prediction logic (stable)
 # ------------------------------
-if submit:
-    if model is not None and scaler is not None:
-        # NOTE: Gender encoding aligned with training: Male->0, Female->1
+if predict_clicked:
+    if model is None or scaler is None:
+        st.error("Model or scaler not available. Prediction cannot run.")
+    else:
+        # training mapping: Male -> 0, Female -> 1 (aligned with train_model.py)
         gender_val = 0 if gender == "Male" else 1
         smoking_val = 1 if smoker == "Yes" else 0
-        history_val = 1 if history == "Yes" else 0
+        hist_val = 1 if history == "Yes" else 0
         wake_val = 1 if wake_consistency == "Consistent" else 0
 
         input_df = pd.DataFrame({
-            'Age': [age],
-            'Gender': [gender_val],
-            'Sleep Duration (hrs)': [sleep_duration],
-            'Physical Activity (mins/day)': [activity],
-            'Stress Level (1–10)': [stress],
-            'Caffeine Intake (cups/day)': [caffeine],
-            'Alcohol Intake (units/day)': [alcohol],
-            'Smoking': [smoking_val],
-            'Heart Rate (bpm)': [heart_rate],
-            'Screen Time Before Bed (hrs)': [screen_time],
-            'Sleep Disorder History': [history_val],
-            'BMI': [bmi],
-            'Wake-up Consistency': [wake_val],
-            'Sleep Environment Score (1–10)': [env_score],
-            'Daily Water Intake (litres)': [water],
+            "Age": [age],
+            "Gender": [gender_val],
+            "Sleep Duration (hrs)": [sleep_duration],
+            "Physical Activity (mins/day)": [activity],
+            "Stress Level (1–10)": [stress],
+            "Caffeine Intake (cups/day)": [caffeine],
+            "Alcohol Intake (units/day)": [alcohol],
+            "Smoking": [smoking_val],
+            "Heart Rate (bpm)": [heart_rate],
+            "Screen Time Before Bed (hrs)": [screen_time],
+            "Sleep Disorder History": [hist_val],
+            "BMI": [bmi],
+            "Wake-up Consistency": [wake_val],
+            "Sleep Environment Score (1–10)": [env_score],
+            "Daily Water Intake (litres)": [water]
         })
-
         try:
             scaled = scaler.transform(input_df)
             pred = model.predict(scaled)[0]
             label_map = {0: "Poor", 1: "Fair", 2: "Good"}
             result = label_map.get(int(pred), "Unknown")
-
             st.markdown(f"<div class='result'>🌙 Predicted Sleep Quality: {result}</div>", unsafe_allow_html=True)
         except Exception as e:
             st.error(f"Prediction failed: {e}")
+
+# ------------------------------
+# Insights row (simple, useful)
+# ------------------------------
+st.markdown("### Quick Insights")
+st.markdown("<div class='tiles-row'>", unsafe_allow_html=True)
+tiles = [
+    ("Consistent Wake", "Sticking to a wake-up time helps circadian rhythm."),
+    ("Bedroom Climate", "Cool (16-19°C), dark, and quiet improves deep sleep."),
+    ("Wind-down Routine", "30-min pre-sleep routine reduces sleep latency."),
+    ("Caffeine Cutoff", "Avoid caffeine 6-8 hours before bed."),
+]
+for title, text in tiles:
+    st.markdown(f"<div class='tile'><h4>{title}</h4><p>{text}</p></div>", unsafe_allow_html=True)
+st.markdown("</div>", unsafe_allow_html=True)
+
+# ------------------------------
+# Floating chat bubble & window (collapsible)
+# ------------------------------
+# We use a st.empty() placeholder + session_state toggle so clicks work reliably.
+chat_placeholder = st.empty()
+
+with chat_placeholder.container():
+    # When closed: show circular button in fixed position (placed by CSS)
+    if not st.session_state.chat_open:
+        # When the user clicks this button, we open the chat window.
+        # The button is a normal Streamlit button so it updates session_state on click.
+        open_button = st.button("💬", key="open_chat_button")
+        if open_button:
+            st.session_state.chat_open = True
     else:
-        st.error("⚠ Prediction unavailable. Model or scaler missing.")
+        # Chat is open: show a compact chat window with history + input
+        st.markdown("<div class='chat-window'>", unsafe_allow_html=True)
+        # header with close action
+        header_cols = st.columns([1,5,1])
+        with header_cols[0]:
+            st.write("")  # spacer
+        with header_cols[1]:
+            st.markdown("<div class='chat-header'><strong>Sleep Assistant</strong><div style='font-size:0.85rem;color:var(--muted)'>Powered by AI</div></div>", unsafe_allow_html=True)
+        with header_cols[2]:
+            if st.button("✕ Close", key="close_chat_button"):
+                st.session_state.chat_open = False
+        # messages area
+        st.markdown("<div class='chat-messages'>", unsafe_allow_html=True)
+        # show chat history
+        for role, text in st.session_state.chat_history:
+            if role == "You":
+                st.markdown(f"<div class='msg-user'>{text}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown(f"<div class='msg-bot'>{text}</div>", unsafe_allow_html=True)
+        st.markdown("</div>", unsafe_allow_html=True)
 
-# ------------------------------
-# Insights Row
-# ------------------------------
-st.markdown("<span id='insights'></span>", unsafe_allow_html=True)
-st.markdown("### Personalized Insights")
-with st.container():
-    st.markdown("<div class='row'>", unsafe_allow_html=True)
-    for t in [
-        ("Circadian Rhythm", "Wake at the same time", "Consistency wins"),
-        ("Bedroom Climate", "Cool, dark, quiet", "Score 7–8/10"),
-        ("Wind-down Routine", "20–30 mins pre-sleep", "Screens off"),
-        ("Caffeine Cutoff", "6–8 hours before bed", "Try 2pm"),
-        ("Hydration Timing", "Front-load daytime", "Reduce at night"),
-    ]:
-        st.markdown(
-            f"""
-            <div class='tile'>
-              <div class='t-eyebrow'>{t[2]}</div>
-              <div class='t-title'>{t[0]}</div>
-              <div class='t-foot'>{t[1]}</div>
-            </div>
-            """,
-            unsafe_allow_html=True,
-        )
-    st.markdown("</div>", unsafe_allow_html=True)
-
-# ------------------------------
-# Chatbot Section
-# ------------------------------
-st.markdown("<span id='chatbot'></span>", unsafe_allow_html=True)
-with st.container():
-    st.markdown("<div class='card'>", unsafe_allow_html=True)
-    st.markdown("<div class='section-title'>💬 Sleep AI Chat Assistant</div>", unsafe_allow_html=True)
-
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
-
-    user_text = st.text_input("Ask your question here:")
-
-    colA, colB = st.columns([1, 1])
-    with colA:
-        send = st.button("Send")
-    with colB:
-        clear = st.button("Clear Chat")
-
-    if clear:
-        st.session_state.chat_history = []
-
-    if send and api_key:
-        if user_text.strip():
+        # input box + send button
+        input_col1, input_col2 = st.columns([4,1])
+        with input_col1:
+            user_message = st.text_input("Type a message", key="chat_input")
+        with input_col2:
+            send_clicked = st.button("Send", key="send_chat")
+        # handle send
+        if send_clicked and user_message and api_key:
+            # append user message
+            st.session_state.chat_history.append(("You", user_message))
+            # simple throttle
+            time.sleep(0.8)
+            # call Gemini/GenAI if available, otherwise fallback canned reply
             try:
-                time.sleep(1.0)  # gentle throttle
-                history = [{"role": "user" if r == "You" else "model", "parts": [m]} for r, m in st.session_state.chat_history]
-
+                history_struct = [
+                    {"role": "user" if r == "You" else "assistant", "parts": [m]}
+                    for r, m in st.session_state.chat_history
+                ]
+                chat_model = None
                 try:
                     chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-                    chat = chat_model.start_chat(history=history)
                 except Exception:
-                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                    chat = chat_model.start_chat(history=history)
+                    try:
+                        chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                    except Exception:
+                        chat_model = None
 
-                response = chat.send_message(user_text)
-                st.session_state.chat_history.append(("You", user_text))
-                st.session_state.chat_history.append(("Bot", getattr(response, "text", "No response")))
+                if chat_model is not None:
+                    chat = chat_model.start_chat(history=history_struct)
+                    response = chat.send_message(user_message)
+                    reply_text = getattr(response, "text", "Sorry — no answer.")
+                else:
+                    reply_text = "AI service unavailable. Try later."
             except Exception as e:
-                st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
+                reply_text = f"Error contacting AI: {e}"
 
-    for role, msg in st.session_state.chat_history:
-        if role == "You":
-            st.info(f"🧑 {msg}")
-        else:
-            st.success(f"🤖 {msg}")
-    st.markdown("</div>", unsafe_allow_html=True)
+            st.session_state.chat_history.append(("Bot", reply_text))
+            # Clear input for next message (streamlit text_input keeps value; we use key trick)
+            st.session_state["chat_input"] = ""
+
+        st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------
-# Footer
+# End footer
 # ------------------------------
-st.markdown("<hr style='border:1px solid var(--border); opacity:.5'/>", unsafe_allow_html=True)
-st.caption("© SleepPro • Built with Streamlit")
+st.markdown("<hr style='opacity:.06'>", unsafe_allow_html=True)
+st.caption("© SleepPro — Minimal, professional UI • Built with Streamlit")
+
