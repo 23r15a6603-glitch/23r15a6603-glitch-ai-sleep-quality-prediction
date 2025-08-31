@@ -168,46 +168,43 @@ with overview_tab:
     st.markdown("</div>", unsafe_allow_html=True)
 
 # ------------------------------
-# PREDICT TAB
+# PREDICT TAB (No Enter Required)
 # ------------------------------
 with predict_tab:
     st.markdown("<a name='predict'></a>", unsafe_allow_html=True)
     st.subheader("Predict your sleep quality")
     st.caption("Takes ~1 minute • Works offline with the bundled model")
 
-    with st.form("sleep_form"):
-        col1, col2, col3 = st.columns(3)
+    col1, col2, col3 = st.columns(3)
 
-        with col1:
-            age = st.number_input("Age", 10, 100, 25)
-            gender = st.selectbox("Gender", ["Male", "Female"])
-            sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
-            activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
+    with col1:
+        age = st.number_input("Age", 10, 100, 25)
+        gender = st.selectbox("Gender", ["Male", "Female"])
+        sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
+        activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
 
-        with col2:
-            stress = st.slider("Stress Level (1–10)", 1, 10, 5)
-            caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
-            alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
-            smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
+    with col2:
+        stress = st.slider("Stress Level (1–10)", 1, 10, 5)
+        caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
+        alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
+        smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
 
-        with col3:
-            heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
-            screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
-            history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
-            bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
+    with col3:
+        heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
+        screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
+        history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
+        bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
 
-        st.markdown("---")
+    st.markdown("---")
 
-        col4, col5 = st.columns(2)
-        with col4:
-            wake_consistency = st.selectbox("Wake‑up Consistency", ["Consistent", "Inconsistent"])
-        with col5:
-            env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
-            water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
+    col4, col5 = st.columns(2)
+    with col4:
+        wake_consistency = st.selectbox("Wake‑up Consistency", ["Consistent", "Inconsistent"])
+    with col5:
+        env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
+        water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
-        submitted = st.form_submit_button("🔍 Predict now")
-
-    if submitted:
+    if st.button("🔍 Predict now"):
         if model is not None and scaler is not None:
             input_df = pd.DataFrame({
                 'Age': [age],
