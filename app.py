@@ -67,31 +67,45 @@ st.markdown(STYLES, unsafe_allow_html=True)
 # ------------------------------
 # Secure API key (Gemini)
 # ------------------------------
-api_key = st.secrets.get("GEMINI_API_KEY")
-if not api_key:
-    try:
-        from dotenv import load_dotenv
-        load_dotenv()
-        api_key = os.getenv("GEMINI_API_KEY")
-    except Exception:
-        api_key = None
+api_key = None
+try:
+    # Try to get API key from Streamlit secrets
+    if hasattr(st, 'secrets') and 'GEMINI_API_KEY' in st.secrets:
+        api_key = st.secrets['GEMINI_API_KEY']
+    # If not in secrets, try environment variable
+    if not api_key:
+        api_key = os.environ.get('GEMINI_API_KEY')
+except Exception:
+    api_key = None
 
 if api_key:
-    genai.configure(api_key=api_key)
+    try:
+        genai.configure(api_key=api_key)
+        gemini_available = True
+    except Exception as e:
+        st.error(f"Error configuring Gemini: {e}")
+        gemini_available = False
 else:
-    st.warning("⚠ Gemini API Key not found. Set GEMINI_API_KEY in .env or Streamlit Secrets.")
+    gemini_available = False
+    st.warning("⚠ Gemini API Key not found. AI Coach feature will be limited.")
 
 # ------------------------------
 # Load model + scaler
 # ------------------------------
-MODEL_PATH = "xgb_sleep_quality_model.pkl"
-SCALER_PATH = "scaler_sleep_quality.pkl"
-model, scaler = None, None
-try:
-    model = joblib.load(MODEL_PATH)
-    scaler = joblib.load(SCALER_PATH)
-except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
+@st.cache_resource
+def load_model():
+    try:
+        model = joblib.load("xgb_sleep_quality_model.pkl")
+        scaler = joblib.load("scaler_sleep_quality.pkl")
+        return model, scaler
+    except FileNotFoundError:
+        st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
+        return None, None
+    except Exception as e:
+        st.error(f"Error loading model: {e}")
+        return None, None
+
+model, scaler = load_model()
 
 # ------------------------------
 # HERO SECTION
@@ -220,32 +234,35 @@ if st.button("Run Prediction"):
             'Daily Water Intake (litres)': [water]
         })
 
-        scaled = scaler.transform(input_df)
-        pred = int(model.predict(scaled)[0])
-        label_map = {0: 'Poor', 1: 'Fair'}
-        result = label_map.get(pred, "Unknown")
+        try:
+            scaled = scaler.transform(input_df)
+            pred = int(model.predict(scaled)[0])
+            label_map = {0: 'Poor', 1: 'Fair'}
+            result = label_map.get(pred, "Unknown")
 
-        tips = []
-        if sleep_duration < 7: tips.append("Aim for 7–9 hours of sleep.")
-        if stress >= 7: tips.append("Add a 5-minute wind-down: breathing, journaling, or light stretching.")
-        if screen_time > 1.0: tips.append("Reduce screens ≥60 minutes before bed.")
-        if caffeine >= 3: tips.append("Cut caffeine after mid-afternoon.")
-        if alcohol >= 2: tips.append("Avoid alcohol within 3–4 hours of bedtime.")
-        if activity < 30: tips.append("Target at least 30 minutes of light activity.")
-        if bmi >= 27: tips.append("Discuss weight, snoring, or apnea risk with a professional if concerned.")
-        if water < 1.5: tips.append("Hydrate earlier in the day to avoid nocturnal awakenings.")
-        if env_score < 6: tips.append("Dark, cool (18–20°C), and quiet rooms improve sleep quality.")
+            tips = []
+            if sleep_duration < 7: tips.append("Aim for 7–9 hours of sleep.")
+            if stress >= 7: tips.append("Add a 5-minute wind-down: breathing, journaling, or light stretching.")
+            if screen_time > 1.0: tips.append("Reduce screens ≥60 minutes before bed.")
+            if caffeine >= 3: tips.append("Cut caffeine after mid-afternoon.")
+            if alcohol >= 2: tips.append("Avoid alcohol within 3–4 hours of bedtime.")
+            if activity < 30: tips.append("Target at least 30 minutes of light activity.")
+            if bmi >= 27: tips.append("Discuss weight, snoring, or apnea risk with a professional if concerned.")
+            if water < 1.5: tips.append("Hydrate earlier in the day to avoid nocturnal awakenings.")
+            if env_score < 6: tips.append("Dark, cool (18–20°C), and quiet rooms improve sleep quality.")
 
-        tone_cls = "fair" if result == "Fair" else "poor"
-        st.markdown(f"<div class='result {tone_cls}'>", unsafe_allow_html=True)
-        st.markdown(f"### 🌙 Predicted Sleep Quality: **{result}**")
-        if tips:
-            st.markdown("**Next best actions:**")
-            for t in tips[:6]:
-                st.write("• ", t)
-        else:
-            st.caption("You're doing great. Keep routines consistent and revisit after a week of tracking.")
-        st.markdown("</div>", unsafe_allow_html=True)
+            tone_cls = "fair" if result == "Fair" else "poor"
+            st.markdown(f"<div class='result {tone_cls}'>", unsafe_allow_html=True)
+            st.markdown(f"### 🌙 Predicted Sleep Quality: **{result}**")
+            if tips:
+                st.markdown("**Next best actions:**")
+                for t in tips[:6]:
+                    st.write("• ", t)
+            else:
+                st.caption("You're doing great. Keep routines consistent and revisit after a week of tracking.")
+            st.markdown("</div>", unsafe_allow_html=True)
+        except Exception as e:
+            st.error(f"Error during prediction: {e}")
     else:
         st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
@@ -271,34 +288,41 @@ with col2:
 if clear:
     st.session_state.chat_history = []
 
-if send and api_key:
-    if user_input.strip():
+if send and user_input.strip():
+    if not gemini_available:
+        st.session_state.chat_history.append(("You", user_input))
+        st.session_state.chat_history.append(("Bot", "⚠ Gemini API not configured. Please add your GEMINI_API_KEY to use the AI Coach."))
+    else:
         try:
-            time.sleep(1.2)
-            history = [
-                {"role": "user" if role == "You" else "model", "parts": [msg]}
-                for role, msg in st.session_state.chat_history
-            ]
-            chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-            chat = chat_model.start_chat(history=history)
-            response = chat.send_message(user_input)
-        except Exception as e:
-            if "429" in str(e):
-                try:
-                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                    chat = chat_model.start_chat(history=history)
-                    response = chat.send_message(user_input)
-                except Exception:
-                    st.session_state.chat_history.append(("Bot", "⚠ Models are out of quota. Try again later."))
-                    response = None
-            else:
-                st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
-                response = None
-
-        if response:
+            # Add user message to chat history
             st.session_state.chat_history.append(("You", user_input))
+            
+            # Format history for Gemini
+            history_for_gemini = []
+            for role, msg in st.session_state.chat_history[:-1]:  # Exclude the latest user message
+                history_for_gemini.append({
+                    "role": "user" if role == "You" else "model",
+                    "parts": [msg]
+                })
+            
+            # Generate response
+            model_name = "gemini-pro"  # Use a stable model name
+            model = genai.GenerativeModel(model_name)
+            chat = model.start_chat(history=history_for_gemini)
+            
+            with st.spinner("Thinking..."):
+                response = chat.send_message(user_input)
+                
+            # Add bot response to chat history
             st.session_state.chat_history.append(("Bot", response.text))
+            
+        except Exception as e:
+            error_msg = f"Error: {str(e)}"
+            if "quota" in error_msg.lower():
+                error_msg = "API quota exceeded. Please try again later."
+            st.session_state.chat_history.append(("Bot", f"⚠ {error_msg}"))
 
+# Display chat history
 for role, msg in st.session_state.chat_history:
     if role == "You":
         st.info(f"🧑 {msg}")
