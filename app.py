@@ -5,6 +5,7 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 import google.generativeai as genai
+from streamlit.components.v1 import html
 
 # ------------------------------
 # Page config
@@ -14,6 +15,22 @@ st.set_page_config(
     page_icon="😴",
     layout="wide",
 )
+
+# ------------------------------
+# JavaScript for scrolling
+# ------------------------------
+def scroll_to_element(element_id):
+    js = f"""
+    <script>
+        var element = document.getElementById("{element_id}");
+        if (element) {{
+            element.scrollIntoView({{
+                behavior: 'smooth'
+            }});
+        }}
+    </script>
+    """
+    html(js)
 
 # ------------------------------
 # Global styles
@@ -90,22 +107,22 @@ else:
     st.warning("⚠ Gemini API Key not found. AI Coach feature will be limited.")
 
 # ------------------------------
-# Load model + scaler
+# Load model + scaler with better error handling
 # ------------------------------
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load("xgb_sleep_quality_model.pkl")
         scaler = joblib.load("scaler_sleep_quality.pkl")
-        return model, scaler
+        return model, scaler, True
     except FileNotFoundError:
         st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
-        return None, None
+        return None, None, False
     except Exception as e:
         st.error(f"Error loading model: {e}")
-        return None, None
+        return None, None, False
 
-model, scaler = load_model()
+model, scaler, model_loaded = load_model()
 
 # ------------------------------
 # HERO SECTION
@@ -123,9 +140,11 @@ st.markdown(
 
 colH1, colH2 = st.columns([1,1])
 with colH1:
-    st.button("Predict my sleep quality", on_click=lambda: st.session_state.update(scroll_to="predict"))
+    if st.button("Predict my sleep quality"):
+        st.session_state.scroll_to = "predict"
 with colH2:
-    st.button("Ask the AI sleep coach", on_click=lambda: st.session_state.update(scroll_to="coach"))
+    if st.button("Ask the AI sleep coach"):
+        st.session_state.scroll_to = "coach"
 
 st.markdown(
     """
@@ -137,6 +156,12 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
+
+# Check if scroll was requested
+if "scroll_to" in st.session_state:
+    scroll_to_element(st.session_state.scroll_to)
+    # Clear the scroll trigger after use
+    del st.session_state.scroll_to
 
 # ------------------------------
 # FEATURES SECTION
@@ -215,7 +240,7 @@ with col5:
     water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
 if st.button("Run Prediction"):
-    if model is not None and scaler is not None:
+    if model_loaded and model is not None and scaler is not None:
         input_df = pd.DataFrame({
             'Age': [age],
             'Gender': [1 if gender == "Male" else 0],
