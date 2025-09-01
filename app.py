@@ -16,25 +16,6 @@ st.set_page_config(
 )
 
 # ------------------------------
-# Custom JavaScript for scrolling
-# ------------------------------
-def scroll_to_section(section_id):
-    js = f"""
-    <script>
-        function scrollToSection() {{
-            const section = document.getElementById('{section_id}');
-            if (section) {{
-                section.scrollIntoView({{
-                    behavior: 'smooth'
-                }});
-            }}
-        }}
-        scrollToSection();
-    </script>
-    """
-    st.components.v1.html(js, height=0)
-
-# ------------------------------
 # Global styles
 # ------------------------------
 STYLES = """
@@ -79,21 +60,6 @@ body { background: var(--bg); color: var(--text); }
 
 .faq { margin-top:20px; }
 .footer { color:#9CA3AF; text-align:center; margin-top: 60px; }
-
-/* Button styles */
-.stButton > button {
-    background-color: #6C63FF;
-    color: white;
-    border-radius: 999px;
-    padding: 14px 24px;
-    font-weight: 600;
-    width: 100%;
-    border: none;
-}
-.stButton > button:hover {
-    background-color: #5a52d5;
-    color: white;
-}
 </style>
 """
 st.markdown(STYLES, unsafe_allow_html=True)
@@ -124,22 +90,22 @@ else:
     st.warning("⚠ Gemini API Key not found. AI Coach feature will be limited.")
 
 # ------------------------------
-# Load model + scaler with better error handling
+# Load model + scaler
 # ------------------------------
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load("xgb_sleep_quality_model.pkl")
         scaler = joblib.load("scaler_sleep_quality.pkl")
-        return model, scaler, True
+        return model, scaler
     except FileNotFoundError:
         st.error("❌ Model/scaler not found. Please upload xgb_sleep_quality_model.pkl and scaler_sleep_quality.pkl.")
-        return None, None, False
+        return None, None
     except Exception as e:
         st.error(f"Error loading model: {e}")
-        return None, None, False
+        return None, None
 
-model, scaler, model_loaded = load_model()
+model, scaler = load_model()
 
 # ------------------------------
 # HERO SECTION
@@ -155,12 +121,6 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-colH1, colH2 = st.columns([1,1])
-with colH1:
-    predict_btn = st.button("Predict my sleep quality", key="predict_btn")
-with colH2:
-    coach_btn = st.button("Ask the AI sleep coach", key="coach_btn")
-
 st.markdown(
     """
     <div class="kpis">
@@ -171,12 +131,6 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-
-# Handle button clicks for scrolling
-if predict_btn:
-    scroll_to_section("predict")
-if coach_btn:
-    scroll_to_section("coach")
 
 # ------------------------------
 # FEATURES SECTION
@@ -225,7 +179,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ------------------------------
 # PREDICT SECTION
 # ------------------------------
-st.markdown("<div class='section' id='predict'>", unsafe_allow_html=True)
+st.markdown("<div class='section'>", unsafe_allow_html=True)
 st.header("🔍 Predict your sleep quality")
 st.caption("Takes ~1 minute • Works offline with the bundled model")
 
@@ -255,7 +209,7 @@ with col5:
     water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
 if st.button("Run Prediction"):
-    if model_loaded and model is not None and scaler is not None:
+    if model is not None and scaler is not None:
         input_df = pd.DataFrame({
             'Age': [age],
             'Gender': [1 if gender == "Male" else 0],
@@ -311,7 +265,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # ------------------------------
 # COACH SECTION
 # ------------------------------
-st.markdown("<div class='section' id='coach'>", unsafe_allow_html=True)
+st.markdown("<div class='section'>", unsafe_allow_html=True)
 st.header("🤖 AI Sleep Coach")
 st.caption("Ask about habits, routines, or how to improve tonight.")
 
