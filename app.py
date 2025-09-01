@@ -5,7 +5,6 @@ import pandas as pd
 import streamlit as st
 import numpy as np
 import google.generativeai as genai
-from streamlit.components.v1 import html
 
 # ------------------------------
 # Page config
@@ -17,20 +16,23 @@ st.set_page_config(
 )
 
 # ------------------------------
-# JavaScript for scrolling
+# Custom JavaScript for scrolling
 # ------------------------------
-def scroll_to_element(element_id):
+def scroll_to_section(section_id):
     js = f"""
     <script>
-        var element = document.getElementById("{element_id}");
-        if (element) {{
-            element.scrollIntoView({{
-                behavior: 'smooth'
-            }});
+        function scrollToSection() {{
+            const section = document.getElementById('{section_id}');
+            if (section) {{
+                section.scrollIntoView({{
+                    behavior: 'smooth'
+                }});
+            }}
         }}
+        scrollToSection();
     </script>
     """
-    html(js)
+    st.components.v1.html(js, height=0)
 
 # ------------------------------
 # Global styles
@@ -77,6 +79,21 @@ body { background: var(--bg); color: var(--text); }
 
 .faq { margin-top:20px; }
 .footer { color:#9CA3AF; text-align:center; margin-top: 60px; }
+
+/* Button styles */
+.stButton > button {
+    background-color: #6C63FF;
+    color: white;
+    border-radius: 999px;
+    padding: 14px 24px;
+    font-weight: 600;
+    width: 100%;
+    border: none;
+}
+.stButton > button:hover {
+    background-color: #5a52d5;
+    color: white;
+}
 </style>
 """
 st.markdown(STYLES, unsafe_allow_html=True)
@@ -140,11 +157,9 @@ st.markdown(
 
 colH1, colH2 = st.columns([1,1])
 with colH1:
-    if st.button("Predict my sleep quality"):
-        st.session_state.scroll_to = "predict"
+    predict_btn = st.button("Predict my sleep quality", key="predict_btn")
 with colH2:
-    if st.button("Ask the AI sleep coach"):
-        st.session_state.scroll_to = "coach"
+    coach_btn = st.button("Ask the AI sleep coach", key="coach_btn")
 
 st.markdown(
     """
@@ -157,11 +172,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 
-# Check if scroll was requested
-if "scroll_to" in st.session_state:
-    scroll_to_element(st.session_state.scroll_to)
-    # Clear the scroll trigger after use
-    del st.session_state.scroll_to
+# Handle button clicks for scrolling
+if predict_btn:
+    scroll_to_section("predict")
+if coach_btn:
+    scroll_to_section("coach")
 
 # ------------------------------
 # FEATURES SECTION
