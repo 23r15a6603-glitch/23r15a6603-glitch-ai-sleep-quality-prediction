@@ -130,27 +130,75 @@ if page == "Sleep Quality Predictor":
             st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
 # ------------------------------
-# Page 2: Chatbot
+# Page 2: Chatbot (Custom UI)
 # ------------------------------
 elif page == "Sleep AI Chatbot":
     st.markdown("<h1 style='text-align: center; color: #2E86C1;'>💬 Sleep AI Chatbot</h1>", unsafe_allow_html=True)
-    st.markdown("---")
+
+    # Custom CSS for chat design
+    st.markdown("""
+    <style>
+    .chat-box {
+        padding: 15px;
+        height: 400px;
+        overflow-y: auto;
+        background: #ffffff;
+        border: 1px solid #ddd;
+        border-radius: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+    }
+    .message {
+        padding: 10px 15px;
+        border-radius: 10px;
+        max-width: 75%;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+    .user {
+        background: #e8f0fe;
+        align-self: flex-end;
+    }
+    .assistant {
+        background: #f1f3f4;
+        align-self: flex-start;
+    }
+    .input-area {
+        display: flex;
+        margin-top: 10px;
+        gap: 10px;
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
     if "chat_history" not in st.session_state:
         st.session_state.chat_history = []
 
-    user_input = st.text_input("Ask your question here:", key="chat_input")
+    # Display chat messages
+    chat_html = '<div class="chat-box">'
+    for role, msg in st.session_state.chat_history:
+        role_class = "user" if role == "You" else "assistant"
+        chat_html += f'<div class="message {role_class}">{msg}</div>'
+    chat_html += "</div>"
+    st.markdown(chat_html, unsafe_allow_html=True)
 
-    col1, col2 = st.columns([1, 1])
-    with col1:
-        send = st.button("Send")
-    with col2:
-        clear = st.button("Clear Chat")
+    # Input and buttons (fixed style)
+    st.markdown("###")
+    with st.container():
+        col1, col2, col3 = st.columns([6,1,1])
+        with col1:
+            user_input = st.text_input("Ask your question here:", key="chat_input", label_visibility="collapsed")
+        with col2:
+            send = st.button("Send")
+        with col3:
+            clear = st.button("Clear")
 
+    # Handle Send
     if send and api_key:
         if user_input.strip():
             try:
-                time.sleep(1.5)  # avoid quota hitting
+                time.sleep(1.2)
 
                 history = [
                     {"role": "user" if role == "You" else "model", "parts": [msg]}
@@ -162,7 +210,7 @@ elif page == "Sleep AI Chatbot":
                 response = chat.send_message(user_input)
 
             except Exception as e:
-                if "429" in str(e):  # Quota exceeded
+                if "429" in str(e):
                     try:
                         chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
                         chat = chat_model.start_chat(history=history)
@@ -180,10 +228,3 @@ elif page == "Sleep AI Chatbot":
 
     if clear:
         st.session_state.chat_history = []
-
-    # Display chat history
-    for role, msg in st.session_state.chat_history:
-        if role == "You":
-            st.info(f"🧑 {msg}")
-        else:
-            st.success(f"🤖 {msg}")
