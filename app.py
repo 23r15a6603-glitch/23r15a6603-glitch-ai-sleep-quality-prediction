@@ -52,7 +52,7 @@ This app predicts your **sleep quality** based on your health and lifestyle.
 - Predicts sleep quality as **Fair** or **Poor**  
 - Uses lifestyle factors: sleep duration, stress, BMI, caffeine, alcohol, smoking, etc.  
 - Provides insights to improve your sleep  
-- Includes an **AI chatbot** for questions  
+- Includes an **AI chatbot** for suggestions while typing  
 ---
 """)
 
@@ -117,11 +117,9 @@ if submitted:
         scaled_input = scaler.transform(input_data)
         prediction = model.predict(scaled_input)[0]
 
-        # 2-class mapping
         label_map = {0: 'Poor', 1: 'Fair'}
         result = label_map.get(prediction, "Unknown")
 
-        # Color-coded display
         if result == "Poor":
             st.error(f"🌙 Your Predicted Sleep Quality: **{result}**")
         elif result == "Fair":
@@ -132,7 +130,7 @@ if submitted:
         st.error("⚠ Model or scaler missing. Cannot predict.")
 
 # ------------------------------
-# 🤖 Chatbot Section
+# 🤖 Chatbot with Live Suggestions
 # ------------------------------
 st.markdown("---")
 st.subheader("💬 Sleep AI Chatbot")
@@ -140,42 +138,43 @@ st.subheader("💬 Sleep AI Chatbot")
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-user_input = st.text_input("Ask your question:")
+user_input = st.text_input("Type your sleep-related question:")
 
-col1, col2 = st.columns([1, 1])
-with col1:
-    send = st.button("Send")
-with col2:
-    clear = st.button("Clear Chat")
-
-if send and api_key and user_input.strip():
-    try:
-        time.sleep(1.2)  # reduce quota hit
-        history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
-                   for role, msg in st.session_state.chat_history]
-
-        chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-        chat = chat_model.start_chat(history=history)
-        response = chat.send_message(user_input)
-    except Exception as e:
-        if "429" in str(e):
-            try:
-                chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                chat = chat_model.start_chat(history=history)
-                response = chat.send_message(user_input)
-            except:
-                response = None
-                st.session_state.chat_history.append(("Bot", "⚠ Quota exceeded. Try later."))
-        else:
-            response = None
-            st.session_state.chat_history.append(("Bot", f"⚠ Error: {e}"))
-
-    if response:
-        st.session_state.chat_history.append(("You", user_input))
-        st.session_state.chat_history.append(("Bot", response.text))
-
-if clear:
+# Clear chat button
+if st.button("Clear Chat"):
     st.session_state.chat_history = []
+
+if user_input and api_key:
+    # Placeholder for typing suggestions
+    suggestion_placeholder = st.empty()
+    
+    try:
+        # Simulate real-time typing suggestions
+        tips = [
+            "💡 Tip: Maintain a regular sleep schedule.",
+            "💡 Tip: Avoid caffeine in the evening.",
+            "💡 Tip: Limit screen time before bed.",
+            "💡 Tip: Light exercise during the day improves sleep."
+        ]
+        for tip in tips:
+            suggestion_placeholder.info(tip)
+            time.sleep(0.8)
+
+        # Call Gemini API for full response
+        chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
+        chat = chat_model.start_chat(
+            history=[{"role": "user" if role == "You" else "model", "parts": [msg]}
+                     for role, msg in st.session_state.chat_history]
+        )
+        response = chat.send_message(user_input)
+
+        if response:
+            st.session_state.chat_history.append(("You", user_input))
+            st.session_state.chat_history.append(("Bot", response.text))
+            suggestion_placeholder.empty()  # remove suggestions
+
+    except Exception as e:
+        st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
 
 # Display chat history
 for role, msg in st.session_state.chat_history:
