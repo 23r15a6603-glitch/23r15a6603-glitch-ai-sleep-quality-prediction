@@ -132,35 +132,83 @@ if submitted:
         st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
 # ------------------------------
-# Chatbot Section (Bottom)
+# 💬 Redesigned Chatbot Section
 # ------------------------------
 st.markdown("---")
-st.subheader("💬 Sleep AI Chatbot")
+st.subheader("💬 Sleep Coach Chatbot")
 
+# Custom CSS for chat UI
+st.markdown("""
+    <style>
+    .chat-container {
+        background: #fff;
+        border-radius: 15px;
+        box-shadow: 0px 4px 12px rgba(0,0,0,0.1);
+        padding: 15px;
+        max-width: 650px;
+        margin: auto;
+    }
+    .chat-box {
+        height: 350px;
+        overflow-y: auto;
+        padding: 10px;
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+    .msg {
+        padding: 10px 15px;
+        border-radius: 12px;
+        max-width: 75%;
+        line-height: 1.4;
+        word-wrap: break-word;
+    }
+    .user-msg {
+        background: #e8f0fe;
+        align-self: flex-end;
+    }
+    .bot-msg {
+        background: #f1f3f4;
+        align-self: flex-start;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# Initialize chat history
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-user_input = st.text_input("Ask your question here:", key="chat_input")
+# Chat display
+st.markdown("<div class='chat-container'><div class='chat-box'>", unsafe_allow_html=True)
+for role, msg in st.session_state.chat_history:
+    if role == "You":
+        st.markdown(f"<div class='msg user-msg'>🧑 {msg}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown(f"<div class='msg bot-msg'>🤖 {msg}</div>", unsafe_allow_html=True)
+st.markdown("</div></div>", unsafe_allow_html=True)
 
-col1, col2 = st.columns([1, 1])
+# Input area
+col1, col2, col3 = st.columns([7, 2, 2])
 with col1:
-    send = st.button("Send")
+    user_input = st.text_input("Type your question...", key="chat_input")
 with col2:
+    send = st.button("Send")
+with col3:
     clear = st.button("Clear Chat")
 
 if send and api_key:
     if user_input.strip():
         try:
-            time.sleep(1.5)  # avoid quota hitting
-
             history = [
                 {"role": "user" if role == "You" else "model", "parts": [msg]}
                 for role, msg in st.session_state.chat_history
             ]
-
             chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
             chat = chat_model.start_chat(history=history)
             response = chat.send_message(user_input)
+
+            st.session_state.chat_history.append(("You", user_input))
+            st.session_state.chat_history.append(("Bot", response.text if response else "⚠ No response."))
 
         except Exception as e:
             if "429" in str(e):  # Quota exceeded
@@ -168,23 +216,12 @@ if send and api_key:
                     chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
                     chat = chat_model.start_chat(history=history)
                     response = chat.send_message(user_input)
-                except Exception:
+                    st.session_state.chat_history.append(("You", user_input))
+                    st.session_state.chat_history.append(("Bot", response.text if response else "⚠ No response."))
+                except:
                     st.session_state.chat_history.append(("Bot", "⚠ Models are out of quota. Try again later."))
-                    response = None
             else:
-                st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
-                response = None
-
-        if response:
-            st.session_state.chat_history.append(("You", user_input))
-            st.session_state.chat_history.append(("Bot", response.text))
+                st.session_state.chat_history.append(("Bot", f"⚠ Error: {e}"))
 
 if clear:
     st.session_state.chat_history = []
-
-# Display chat history
-for role, msg in st.session_state.chat_history:
-    if role == "You":
-        st.info(f"🧑 {msg}")
-    else:
-        st.success(f"🤖 {msg}")
