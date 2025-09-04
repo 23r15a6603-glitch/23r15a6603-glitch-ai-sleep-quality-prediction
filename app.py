@@ -41,9 +41,66 @@ except FileNotFoundError:
 st.set_page_config(page_title="Sleep Quality Predictor", layout="centered")
 
 # ------------------------------
+# 🌌 Night Sky Background (Stars + Moon)
+# ------------------------------
+st.markdown(
+    """
+    <style>
+    /* Full page night sky gradient */
+    body {
+        background: radial-gradient(ellipse at bottom, #0b0c2a 0%, #000000 100%);
+        background-size: cover;
+        color: #ffffff;
+    }
+
+    /* Stars */
+    body::after {
+        content: '';
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: transparent url('https://i.ibb.co/0D7jHzG/stars.png') repeat top center;
+        pointer-events: none;
+        z-index: -1;
+        animation: twinkle 5s infinite alternate;
+    }
+
+    /* Moon */
+    body::before {
+        content: '';
+        position: fixed;
+        top: 50px;
+        right: 50px;
+        width: 100px;
+        height: 100px;
+        background: url('https://i.ibb.co/8bP1GQX/moon.png') no-repeat center center;
+        background-size: contain;
+        border-radius: 50%;
+        pointer-events: none;
+        z-index: -1;
+    }
+
+    /* Twinkle animation */
+    @keyframes twinkle {
+        0% { opacity: 0.8; }
+        50% { opacity: 1; }
+        100% { opacity: 0.8; }
+    }
+
+    /* Make all Streamlit containers transparent */
+    .stApp, .css-18e3th9 {
+        background: transparent !important;
+    }
+    </style>
+    """, unsafe_allow_html=True
+)
+
+# ------------------------------
 # 🏷 Header + About
 # ------------------------------
-st.markdown("<h1 style='text-align:center; color:#6C3483;'>😴 Sleep Quality Predictor</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align:center; color:#f0e68c;'>😴 Sleep Quality Predictor</h1>", unsafe_allow_html=True)
 
 st.markdown("""
 This app predicts your *sleep quality* based on your health and lifestyle.  
@@ -117,11 +174,9 @@ if submitted:
         scaled_input = scaler.transform(input_data)
         prediction = model.predict(scaled_input)[0]
 
-        # 2-class mapping
         label_map = {0: 'Poor', 1: 'Fair'}
         result = label_map.get(prediction, "Unknown")
 
-        # Color-coded display
         if result == "Poor":
             st.error(f"🌙 Your Predicted Sleep Quality: *{result}*")
         elif result == "Fair":
@@ -150,7 +205,7 @@ with col2:
 
 if send and api_key and user_input.strip():
     try:
-        time.sleep(1.2)  # reduce quota hit
+        time.sleep(1.2)
         history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
                    for role, msg in st.session_state.chat_history]
 
