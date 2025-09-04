@@ -31,7 +31,7 @@ This app predicts your **sleep quality** based on your health and lifestyle.
 **Features:**
 - Predicts sleep quality as **Fair** or **Poor**  
 - Uses lifestyle factors: sleep duration, stress, BMI, caffeine, alcohol, smoking, etc.  
-- Includes a **Sleep Q&A section** with 300+ questions & answers  
+- Includes a **Sleep Chatbot (Static Q&A, 300+ questions)**  
 ---
 """)
 
@@ -109,34 +109,46 @@ if submitted:
         st.error("⚠ Model or scaler missing. Cannot predict.")
 
 # ------------------------------
-# 📚 Sleep Questions & Answers
+# 💬 Static Sleep Chatbot
 # ------------------------------
 st.markdown("---")
-st.subheader("📖 Sleep Q&A (300+ Questions)")
+st.subheader("💬 Sleep Chatbot (Static Q&A)")
 
-# Example structure: Replace with your full 300+ Q&A
+# Example: Replace with full 300+ Q&A
 sleep_qa = [
     {"question": "What is good sleep duration for adults?", "answer": "7–9 hours per night is recommended for most adults."},
     {"question": "Does caffeine affect sleep?", "answer": "Yes, consuming caffeine in the evening can reduce sleep quality."},
     {"question": "Can exercise improve sleep?", "answer": "Regular exercise can improve sleep quality, but avoid intense workouts right before bed."},
     {"question": "What is insomnia?", "answer": "Insomnia is difficulty falling or staying asleep, even when you have the chance to sleep."},
     {"question": "Does alcohol improve sleep?", "answer": "Alcohol may make you sleepy initially but disrupts the deep sleep cycle."},
-    # ... add 300+ questions in this list
+    # ... add 300+ questions here
 ]
 
-# Search/filter
-search_query = st.text_input("Search Questions:")
-filtered_qa = [qa for qa in sleep_qa if search_query.lower() in qa["question"].lower()]
+# Session state for chat history
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# Display questions and answers
-for qa in filtered_qa:
-    st.markdown(f"**Q:** {qa['question']}")
-    st.markdown(f"**A:** {qa['answer']}")
-    st.markdown("---")
+user_input = st.text_input("Ask a sleep question:")
 
-# If no search, show first 20 by default
-if not search_query:
-    for qa in sleep_qa[:20]:
-        st.markdown(f"**Q:** {qa['question']}")
-        st.markdown(f"**A:** {qa['answer']}")
-        st.markdown("---")
+# Clear chat
+if st.button("Clear Chat"):
+    st.session_state.chat_history = []
+
+# Search for answer
+if user_input:
+    # Find first matching QA
+    answer = "Sorry, I don't have an answer for that."
+    for qa in sleep_qa:
+        if user_input.lower() in qa["question"].lower():
+            answer = qa["answer"]
+            break
+    # Add to chat history
+    st.session_state.chat_history.append(("You", user_input))
+    st.session_state.chat_history.append(("Bot", answer))
+
+# Display chat history in chat-style
+for role, msg in st.session_state.chat_history:
+    if role == "You":
+        st.info(f"🧑 {msg}")
+    else:
+        st.success(f"🤖 {msg}")
