@@ -40,13 +40,13 @@ except FileNotFoundError:
 # ------------------------------
 # Streamlit Config
 # ------------------------------
-st.set_page_config(page_title="Sleep Quality App", layout="wide")
+st.set_page_config(page_title="Sleep Quality Predictor", layout="wide")
 
 # ------------------------------
-# Sidebar Navigation
+# Sidebar
 # ------------------------------
 with st.sidebar:
-    st.title("😴 Sleep Quality App")
+    st.title("😴 Sleep Quality Predictor")
     st.markdown("""
     *About this app:*  
     - Predicts your sleep quality as Good, Fair, or Poor  
@@ -55,157 +55,136 @@ with st.sidebar:
     - Includes an AI chatbot to answer your sleep-related questions  
     """)
     st.markdown("---")
-    page = st.radio("📍 Navigate", ["Sleep Quality Predictor", "Sleep AI Chatbot"])
+    st.info("Fill out the form on the right 👉 to get your result.")
 
 # ------------------------------
-# Page 1: Predictor
+# Main Title
 # ------------------------------
-if page == "Sleep Quality Predictor":
-    st.markdown("<h1 style='text-align: center; color: #6C3483;'>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
+st.markdown("<h1 style='text-align: center; color: #6C3483;'>AI-Based Sleep Quality Prediction</h1>", unsafe_allow_html=True)
+st.markdown("---")
+
+# ------------------------------
+# Predictor Section
+# ------------------------------
+with st.form("sleep_form"):
+    st.subheader("Enter your Health and Lifestyle Factors")
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        age = st.number_input("Age", 10, 100, 25)
+        gender = st.selectbox("Gender", ["Male", "Female"])
+        sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
+        activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
+
+    with col2:
+        stress = st.slider("Stress Level (1–10)", 1, 10, 5)
+        caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
+        alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
+        smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
+
+    with col3:
+        heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
+        screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
+        history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
+        bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
+
     st.markdown("---")
 
-    with st.form("sleep_form"):
-        st.subheader("Enter your Health and Lifestyle Factors")
-        col1, col2, col3 = st.columns(3)
+    col4, col5 = st.columns(2)
+    with col4:
+        wake_consistency = st.selectbox("Wake-up Consistency", ["Consistent", "Inconsistent"])
+    with col5:
+        env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
+        water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
 
-        with col1:
-            age = st.number_input("Age", 10, 100, 25)
-            gender = st.selectbox("Gender", ["Male", "Female"])
-            sleep_duration = st.slider("Sleep Duration (hrs)", 0.0, 12.0, 7.0, 0.5)
-            activity = st.slider("Physical Activity (mins/day)", 0, 180, 30)
-
-        with col2:
-            stress = st.slider("Stress Level (1–10)", 1, 10, 5)
-            caffeine = st.slider("Caffeine Intake (cups/day)", 0, 10, 1)
-            alcohol = st.slider("Alcohol Intake (units/day)", 0, 10, 0)
-            smoker = st.selectbox("Do you smoke?", ["No", "Yes"])
-
-        with col3:
-            heart_rate = st.number_input("Heart Rate (bpm)", 40, 140, 70)
-            screen_time = st.slider("Screen Time Before Bed (hrs)", 0.0, 10.0, 2.0, 0.5)
-            history = st.selectbox("Sleep Disorder History", ["No", "Yes"])
-            bmi = st.number_input("BMI", 10.0, 50.0, 22.0)
-
-        st.markdown("---")
-
-        col4, col5 = st.columns(2)
-        with col4:
-            wake_consistency = st.selectbox("Wake-up Consistency", ["Consistent", "Inconsistent"])
-        with col5:
-            env_score = st.slider("Sleep Environment Score (1–10)", 1, 10, 7)
-            water = st.slider("Daily Water Intake (litres)", 0.0, 5.0, 2.0, 0.5)
-
-        submitted = st.form_submit_button("🔍 Predict Your Sleep Quality")
-
-    # Prediction
-    if submitted:
-        if model and scaler:
-            input_data = pd.DataFrame({
-                'Age': [age],
-                'Gender': [1 if gender == "Male" else 0],
-                'Sleep Duration (hrs)': [sleep_duration],
-                'Physical Activity (mins/day)': [activity],
-                'Stress Level (1–10)': [stress],
-                'Caffeine Intake (cups/day)': [caffeine],
-                'Alcohol Intake (units/day)': [alcohol],
-                'Smoking': [1 if smoker == "Yes" else 0],
-                'Heart Rate (bpm)': [heart_rate],
-                'Screen Time Before Bed (hrs)': [screen_time],
-                'Sleep Disorder History': [1 if history == "Yes" else 0],
-                'BMI': [bmi],
-                'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
-                'Sleep Environment Score (1–10)': [env_score],
-                'Daily Water Intake (litres)': [water]
-            })
-
-            scaled_input = scaler.transform(input_data)
-            prediction = model.predict(scaled_input)[0]
-            label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
-            result = label_map.get(prediction, "Unknown")
-
-            st.success(f"🌙 *Predicted Sleep Quality:* {result}")
-        else:
-            st.error("⚠ Prediction unavailable. Model or scaler missing.")
+    submitted = st.form_submit_button("🔍 Predict Your Sleep Quality")
 
 # ------------------------------
-# Page 2: Chatbot (Fixed UI)
+# Prediction
 # ------------------------------
-elif page == "Sleep AI Chatbot":
-    st.markdown("<h1 style='text-align: center; color: #2E86C1;'>💬 Sleep AI Chatbot</h1>", unsafe_allow_html=True)
+if submitted:
+    if model and scaler:
+        input_data = pd.DataFrame({
+            'Age': [age],
+            'Gender': [1 if gender == "Male" else 0],
+            'Sleep Duration (hrs)': [sleep_duration],
+            'Physical Activity (mins/day)': [activity],
+            'Stress Level (1–10)': [stress],
+            'Caffeine Intake (cups/day)': [caffeine],
+            'Alcohol Intake (units/day)': [alcohol],
+            'Smoking': [1 if smoker == "Yes" else 0],
+            'Heart Rate (bpm)': [heart_rate],
+            'Screen Time Before Bed (hrs)': [screen_time],
+            'Sleep Disorder History': [1 if history == "Yes" else 0],
+            'BMI': [bmi],
+            'Wake-up Consistency': [1 if wake_consistency == "Consistent" else 0],
+            'Sleep Environment Score (1–10)': [env_score],
+            'Daily Water Intake (litres)': [water]
+        })
 
-    # Custom CSS
-    st.markdown("""
-    <style>
-    .chat-container {
-        border: 1px solid #ddd;
-        border-radius: 10px;
-        padding: 15px;
-        background: #fff;
-        height: 400px;
-        overflow-y: auto;
-        display: flex;
-        flex-direction: column;
-    }
-    .user-msg {
-        background: #e8f0fe;
-        padding: 10px 15px;
-        border-radius: 10px;
-        margin: 5px;
-        align-self: flex-end;
-        max-width: 70%;
-        word-wrap: break-word;
-    }
-    .bot-msg {
-        background: #f1f3f4;
-        padding: 10px 15px;
-        border-radius: 10px;
-        margin: 5px;
-        align-self: flex-start;
-        max-width: 70%;
-        word-wrap: break-word;
-    }
-    </style>
-    """, unsafe_allow_html=True)
+        scaled_input = scaler.transform(input_data)
+        prediction = model.predict(scaled_input)[0]
+        label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
+        result = label_map.get(prediction, "Unknown")
 
-    if "chat_history" not in st.session_state:
-        st.session_state.chat_history = []
+        st.success(f"🌙 *Predicted Sleep Quality:* {result}")
+    else:
+        st.error("⚠ Prediction unavailable. Model or scaler missing.")
 
-    # Chat Display
-    chat_html = '<div class="chat-container">'
-    for role, msg in st.session_state.chat_history:
-        if role == "You":
-            chat_html += f'<div class="user-msg">🧑 {msg}</div>'
-        else:
-            chat_html += f'<div class="bot-msg">🤖 {msg}</div>'
-    chat_html += "</div>"
-    st.markdown(chat_html, unsafe_allow_html=True)
+# ------------------------------
+# Chatbot Section (Bottom)
+# ------------------------------
+st.markdown("---")
+st.subheader("💬 Sleep AI Chatbot")
 
-    # Input area
-    col1, col2, col3 = st.columns([6, 1, 1])
-    with col1:
-        user_input = st.text_input("Type your message:", key="chat_input", label_visibility="collapsed")
-    with col2:
-        send = st.button("Send")
-    with col3:
-        clear = st.button("Clear")
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-    # Handle Send
-    if send and api_key:
-        if user_input.strip():
+user_input = st.text_input("Ask your question here:", key="chat_input")
+
+col1, col2 = st.columns([1, 1])
+with col1:
+    send = st.button("Send")
+with col2:
+    clear = st.button("Clear Chat")
+
+if send and api_key:
+    if user_input.strip():
+        try:
+            time.sleep(1.5)  # avoid quota hitting
+
+            history = [
+                {"role": "user" if role == "You" else "model", "parts": [msg]}
+                for role, msg in st.session_state.chat_history
+            ]
+
+            chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
+            chat = chat_model.start_chat(history=history)
+            response = chat.send_message(user_input)
+
+        except Exception as e:
+            if "429" in str(e):  # Quota exceeded
+                try:
+                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                    chat = chat_model.start_chat(history=history)
+                    response = chat.send_message(user_input)
+                except Exception:
+                    st.session_state.chat_history.append(("Bot", "⚠ Models are out of quota. Try again later."))
+                    response = None
+            else:
+                st.session_state.chat_history.append(("Bot", f"⚠ Chatbot error: {e}"))
+                response = None
+
+        if response:
             st.session_state.chat_history.append(("You", user_input))
-            try:
-                time.sleep(1.2)
-                history = [
-                    {"role": "user" if role == "You" else "model", "parts": [msg]}
-                    for role, msg in st.session_state.chat_history
-                ]
-                chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-                chat = chat_model.start_chat(history=history)
-                response = chat.send_message(user_input)
-                if response:
-                    st.session_state.chat_history.append(("Bot", response.text))
-            except Exception as e:
-                st.session_state.chat_history.append(("Bot", f"⚠ Error: {e}"))
+            st.session_state.chat_history.append(("Bot", response.text))
 
-    if clear:
-        st.session_state.chat_history = []
+if clear:
+    st.session_state.chat_history = []
+
+# Display chat history
+for role, msg in st.session_state.chat_history:
+    if role == "You":
+        st.info(f"🧑 {msg}")
+    else:
+        st.success(f"🤖 {msg}")
