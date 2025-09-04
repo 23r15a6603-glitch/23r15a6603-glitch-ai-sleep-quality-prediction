@@ -6,7 +6,7 @@ import streamlit as st
 import google.generativeai as genai
 
 # ------------------------------
-# ✅ API Key Handling
+# ✅ Secure API Key Handling
 # ------------------------------
 api_key = st.secrets.get("GEMINI_API_KEY")
 if not api_key:
@@ -20,10 +20,10 @@ if not api_key:
 if api_key:
     genai.configure(api_key=api_key)
 else:
-    st.warning("⚠ Gemini API Key not found. Please set GEMINI_API_KEY in .env or Streamlit Secrets.")
+    st.warning("⚠ Gemini API Key not found. Set GEMINI_API_KEY in .env or Streamlit Secrets.")
 
 # ------------------------------
-# ✅ Load Model & Scaler
+# ✅ Load ML model and scaler
 # ------------------------------
 MODEL_PATH = "xgb_sleep_quality_model.pkl"
 SCALER_PATH = "scaler_sleep_quality.pkl"
@@ -33,7 +33,7 @@ try:
     model = joblib.load(MODEL_PATH)
     scaler = joblib.load(SCALER_PATH)
 except FileNotFoundError:
-    st.error("❌ Model/scaler not found. Please upload them first.")
+    st.error("❌ Model/scaler not found. Upload them first.")
 
 # ------------------------------
 # ✅ Page Config
@@ -41,17 +41,18 @@ except FileNotFoundError:
 st.set_page_config(page_title="Sleep Quality Predictor", layout="centered")
 
 # ------------------------------
-# 🏷️ Title + About
+# 🏷️ Header + About
 # ------------------------------
 st.markdown("<h1 style='text-align:center; color:#6C3483;'>😴 Sleep Quality Predictor</h1>", unsafe_allow_html=True)
 
 st.markdown("""
-This app helps you check your **sleep quality** using health and lifestyle factors.  
+This app predicts your **sleep quality** based on your health and lifestyle.  
+
 **Features:**
-- Predicts your sleep quality as **Good, Fair, or Poor**  
-- Considers lifestyle habits like **sleep duration, stress, BMI, caffeine, alcohol, smoking, etc.**  
-- Gives you **insights to improve your sleep**  
-- Includes an **AI chatbot** for your questions  
+- Predicts sleep quality as **Fair** or **Poor**  
+- Uses lifestyle factors: sleep duration, stress, BMI, caffeine, alcohol, smoking, etc.  
+- Provides insights to improve your sleep  
+- Includes an **AI chatbot** for questions  
 ---
 """)
 
@@ -91,7 +92,7 @@ with st.form("sleep_form"):
     submitted = st.form_submit_button("🔍 Predict Sleep Quality")
 
 # ------------------------------
-# 📊 Prediction
+# 📊 Prediction (Fair / Poor)
 # ------------------------------
 if submitted:
     if model and scaler:
@@ -116,10 +117,17 @@ if submitted:
         scaled_input = scaler.transform(input_data)
         prediction = model.predict(scaled_input)[0]
 
-        label_map = {0: 'Poor', 1: 'Fair', 2: 'Good'}
+        # 2-class mapping
+        label_map = {0: 'Poor', 1: 'Fair'}
         result = label_map.get(prediction, "Unknown")
 
-        st.success(f"🌙 Your Predicted Sleep Quality: **{result}**")
+        # Color-coded display
+        if result == "Poor":
+            st.error(f"🌙 Your Predicted Sleep Quality: **{result}**")
+        elif result == "Fair":
+            st.warning(f"🌙 Your Predicted Sleep Quality: **{result}**")
+        else:
+            st.info(f"🌙 Your Predicted Sleep Quality: **{result}**")
     else:
         st.error("⚠ Model or scaler missing. Cannot predict.")
 
@@ -140,37 +148,36 @@ with col1:
 with col2:
     clear = st.button("Clear Chat")
 
-if send and api_key:
-    if user_input.strip():
-        try:
-            time.sleep(1.2)  # reduce quota hit
-            history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
-                       for role, msg in st.session_state.chat_history]
+if send and api_key and user_input.strip():
+    try:
+        time.sleep(1.2)  # reduce quota hit
+        history = [{"role": "user" if role == "You" else "model", "parts": [msg]}
+                   for role, msg in st.session_state.chat_history]
 
-            chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
-            chat = chat_model.start_chat(history=history)
-            response = chat.send_message(user_input)
-        except Exception as e:
-            if "429" in str(e):
-                try:
-                    chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
-                    chat = chat_model.start_chat(history=history)
-                    response = chat.send_message(user_input)
-                except:
-                    response = None
-                    st.session_state.chat_history.append(("Bot", "⚠ Quota exceeded. Try again later."))
-            else:
+        chat_model = genai.GenerativeModel("gemini-2.0-pro-exp")
+        chat = chat_model.start_chat(history=history)
+        response = chat.send_message(user_input)
+    except Exception as e:
+        if "429" in str(e):
+            try:
+                chat_model = genai.GenerativeModel("gemini-2.0-flash-exp")
+                chat = chat_model.start_chat(history=history)
+                response = chat.send_message(user_input)
+            except:
                 response = None
-                st.session_state.chat_history.append(("Bot", f"⚠ Error: {e}"))
+                st.session_state.chat_history.append(("Bot", "⚠ Quota exceeded. Try later."))
+        else:
+            response = None
+            st.session_state.chat_history.append(("Bot", f"⚠ Error: {e}"))
 
-        if response:
-            st.session_state.chat_history.append(("You", user_input))
-            st.session_state.chat_history.append(("Bot", response.text))
+    if response:
+        st.session_state.chat_history.append(("You", user_input))
+        st.session_state.chat_history.append(("Bot", response.text))
 
 if clear:
     st.session_state.chat_history = []
 
-# Show history
+# Display chat history
 for role, msg in st.session_state.chat_history:
     if role == "You":
         st.info(f"🧑 {msg}")
